@@ -54,12 +54,6 @@ app.use((req, res, next) => {
 
 // Routes
 //Product
-app.get('/', (req, res) => {
-    res.render('index', {
-        title: 'Trang chủ - TechStore',
-        body: '<div id="product-list-container"></div>', // Placeholder cho nội dung sản phẩm
-    });
-});
 app.use('/product', require('./routes/productRoutes'));
 // app.use('/', require('./routes/productRoutes'));
 

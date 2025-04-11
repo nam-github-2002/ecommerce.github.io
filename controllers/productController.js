@@ -4,86 +4,6 @@ const ErrorResponse = require('../utils/ErrorResponse');
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 
-// productController.js
-exports.getProductsApi = async (req, res) => {
-    try {
-        // Lấy tham số từ query (phân trang, lọc, sắp xếp)
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 12;
-        const skip = (page - 1) * limit;
-        const keyword = req.query.keyword;
-
-        // Xây dựng query
-        let query = {};
-
-        // Tìm kiếm theo keyword (tên hoặc mô tả)
-        if (keyword) {
-            query.$or = [
-                { name: { $regex: keyword, $options: 'i' } },
-                { description: { $regex: keyword, $options: 'i' } },
-            ];
-        }
-
-        // Lọc theo danh mục
-        if (req.query.category) {
-            query.category = req.query.category;
-        }
-
-        // Lọc theo giá
-        if (req.query.price) {
-            const [min, max] = req.query.price.split('-');
-            query.price = {};
-            if (min) query.price.$gte = parseInt(min);
-            if (max) query.price.$lte = parseInt(max);
-        }
-
-        // Sắp xếp
-        let sort = { createdAt: -1 }; // Mặc định sắp xếp mới nhất
-        if (req.query.sort) {
-            if (req.query.sort === 'price') sort = { price: 1 };
-            if (req.query.sort === '-price') sort = { price: -1 };
-            if (req.query.sort === '-ratings') sort = { ratings: -1 };
-        }
-
-        // Thực hiện query
-        const products = await Product.find(query)
-            .sort(sort)
-            .skip(skip)
-            .limit(limit);
-
-        const totalProducts = await Product.countDocuments(query);
-        const totalPages = Math.ceil(totalProducts / limit);
-
-        // Lấy danh sách categories để hiển thị trong filter
-        const categories = await ProductCategory.find({})
-            .select('name') // Thêm slug nếu có
-            .sort({ name: 1 }); // Sắp xếp theo tên
-
-        // Chuẩn bị dữ liệu pagination
-        const pagination = {
-            current: page,
-            pages: totalPages,
-            hasNext: page < totalPages,
-            hasPrev: page > 1,
-        };
-
-        // Thay vì render view, trả về JSON
-        res.json({
-            success: true,
-            products,
-            categories,
-            pagination,
-            price: req.query.price,
-            rating: req.query.rating,
-            currentSort: req.query.sort,
-            currentCategory: req.query.category,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server Error' });
-    }
-};
-
 // @desc    Get all products
 // @route   GET /api/v1/products
 // @access  Public
@@ -156,7 +76,6 @@ exports.getProducts = async (req, res) => {
             products,
             categories,
             pagination,
-            layout: false,
             price: req.query.price,
             rating: req.query.rating,
             currentSort: req.query.sort,

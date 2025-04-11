@@ -9,7 +9,7 @@ const {
     deleteProduct,
 } = require('../controllers/productController');
 
-router.route('/api/products').get(getProductsApi);
+
 router.route('/').get(getProducts);
 router.route('/:id').get(getProduct);
 // router.route('/:id').get(getProduct).put(updateProduct).delete(deleteProduct);
