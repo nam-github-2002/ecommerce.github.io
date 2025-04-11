@@ -1,0 +1,262 @@
+<div class="row">
+    <div class="col-md-5">
+        <!-- Product Images -->
+        <div class="product-images">
+            <div class="main-image mb-3">
+                <img
+                    src="<%= product.images[0].url %>"
+                    class="img-fluid rounded"
+                    alt="<%= product.name %>"
+                    id="main-image" />
+            </div>
+            <div class="thumbnail-images d-flex flex-wrap">
+                <% product.images.forEach((image, index) => { %>
+                <div
+                    class="thumbnail me-2 mb-2 <%= index === 0 ? 'active' : '' %>"
+                    style="width: 80px; cursor: pointer">
+                    <img
+                        src="<%= image.url %>"
+                        class="img-thumbnail"
+                        alt="Thumbnail <%= index + 1 %>"
+                        data-index="<%= index %>" />
+                </div>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <!-- Product Info -->
+        <h2><%= product.name %></h2>
+        <div class="rating mb-3">
+            <% for (let i = 1; i <= 5; i++) { %> <% if (i <= product.ratings) {
+            %>
+            <i class="fas fa-star text-warning"></i>
+            <% } else if (i - 0.5 <= product.ratings) { %>
+            <i class="fas fa-star-half-alt text-warning"></i>
+            <% } else { %>
+            <i class="far fa-star text-warning"></i>
+            <% } %> <% } %>
+            <span class="ms-1">(<%= product.numOfReviews %> đánh giá)</span>
+        </div>
+        <h3 class="text-danger mb-4">
+            <%= product.price.toLocaleString('vi-VN') %> ₫
+        </h3>
+
+        <div class="mb-4">
+            <h5>Mô tả sản phẩm</h5>
+            <p><%= product.description %></p>
+        </div>
+
+        <div class="mb-4">
+            <h5>Thông tin bán hàng</h5>
+            <ul>
+                <li>
+                    Danh mục:
+                    <span class="text-primary"><%= product.category %></span>
+                </li>
+                <li>
+                    Nhà bán:
+                    <span class="text-primary"><%= product.seller %></span>
+                </li>
+                <li>
+                    Tình trạng:
+                    <span class="text-primary"
+                        ><%= product.stock > 0 ? 'Còn hàng' : 'Hết hàng'
+                        %></span
+                    >
+                </li>
+            </ul>
+        </div>
+
+        <div class="d-flex align-items-center mb-4">
+            <div class="quantity me-3">
+                <button class="btn btn-outline-secondary btn-sm minus">
+                    -
+                </button>
+                <input
+                    type="number"
+                    class="form-control d-inline-block text-center"
+                    value="1"
+                    min="1"
+                    max="<%= product.stock %>"
+                    style="width: 60px" />
+                <button class="btn btn-outline-secondary btn-sm plus">+</button>
+            </div>
+            <button
+                class="btn btn-primary me-2 add-to-cart"
+                data-product-id="<%= product._id %>">
+                <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ hàng
+            </button>
+            <button class="btn btn-outline-danger">
+                <i class="fas fa-heart"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Reviews Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h4>Đánh giá sản phẩm</h4>
+        <div class="card mb-4">
+            <div class="card-body">
+                <% if (product.reviews.length === 0) { %>
+                <p class="mb-0">Chưa có đánh giá nào cho sản phẩm này.</p>
+                <% } else { %> <% product.reviews.forEach(review => { %>
+                <div class="review mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="mb-1"><%= review.name %></h6>
+                        <small class="text-muted"
+                            ><%= new Date(review.createdAt).toLocaleDateString()
+                            %></small
+                        >
+                    </div>
+                    <div class="mb-2">
+                        <% for (let i = 1; i <= 5; i++) { %> <% if (i <=
+                        review.rating) { %>
+                        <i class="fas fa-star text-warning"></i>
+                        <% } else { %>
+                        <i class="far fa-star text-warning"></i>
+                        <% } %> <% } %>
+                    </div>
+                    <p class="mb-0"><%= review.comment %></p>
+                </div>
+                <% }) %> <% } %>
+            </div>
+        </div>
+
+        <!-- Review Form -->
+        <% if (currentUser) { %>
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Viết đánh giá</h5>
+            </div>
+            <div class="card-body">
+                <form id="review-form">
+                    <div class="mb-3">
+                        <label class="form-label">Đánh giá của bạn</label>
+                        <div class="rating-stars">
+                            <% for (let i = 1; i <= 5; i++) { %>
+                            <i
+                                class="far fa-star fa-lg"
+                                data-rating="<%= i %>"
+                                style="cursor: pointer"></i>
+                            <% } %>
+                            <input
+                                type="hidden"
+                                name="rating"
+                                id="rating-value"
+                                required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">Nhận xét</label>
+                        <textarea
+                            class="form-control"
+                            id="comment"
+                            name="comment"
+                            rows="3"
+                            required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        Gửi đánh giá
+                    </button>
+                </form>
+            </div>
+        </div>
+        <% } else { %>
+        <div class="alert alert-info">
+            Vui lòng <a href="/auth/login" class="alert-link">đăng nhập</a> để đánh
+            giá sản phẩm này.
+        </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+    // Xử lý thay đổi ảnh chính khi click vào thumbnail
+    document.querySelectorAll('.thumbnail img').forEach((img) => {
+        img.addEventListener('click', function () {
+            const index = this.getAttribute('data-index');
+            document.getElementById('main-image').src = this.src;
+
+            // Thêm class active cho thumbnail được chọn
+            document.querySelectorAll('.thumbnail').forEach((thumb) => {
+                thumb.classList.remove('active');
+            });
+            this.parentElement.classList.add('active');
+        });
+    });
+
+    // Xử lý tăng giảm số lượng
+    document.querySelector('.minus').addEventListener('click', function () {
+        const input = this.nextElementSibling;
+        if (parseInt(input.value) > 1) {
+            input.value = parseInt(input.value) - 1;
+        }
+    });
+
+    document.querySelector('.plus').addEventListener('click', function () {
+        const input = this.previousElementSibling;
+        if (parseInt(input.value) < parseInt(input.max)) {
+            input.value = parseInt(input.value) + 1;
+        }
+    });
+
+    // Xử lý thêm vào giỏ hàng
+    document
+        .querySelector('.add-to-cart')
+        .addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            const quantity = document.querySelector('.quantity input').value;
+            addToCart(productId, quantity);
+        });
+
+    // Xử lý đánh giá sao
+    document.querySelectorAll('.rating-stars i').forEach((star) => {
+        star.addEventListener('click', function () {
+            const rating = this.getAttribute('data-rating');
+            document.getElementById('rating-value').value = rating;
+
+            // Đổi màu sao
+            document.querySelectorAll('.rating-stars i').forEach((s) => {
+                if (
+                    parseInt(s.getAttribute('data-rating')) <= parseInt(rating)
+                ) {
+                    s.classList.remove('far');
+                    s.classList.add('fas');
+                } else {
+                    s.classList.remove('fas');
+                    s.classList.add('far');
+                }
+            });
+        });
+    });
+
+    // Xử lý form đánh giá
+    if (document.getElementById('review-form')) {
+        document
+            .getElementById('review-form')
+            .addEventListener('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch(`/products/<%= product._id %>/reviews`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': '<%= token %>',
+                    },
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch((error) => console.error('Error:', error));
+            });
+    }
+</script>

@@ -1,0 +1,144 @@
+<div class="row">
+    <div class="col-md-3">
+      <!-- Sidebar -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Bộ lọc</h5>
+        </div>
+        <div class="card-body">
+          <form id="filter-form">
+            <div class="mb-3">
+              <label class="form-label">Danh mục</label>
+              <select class="form-select" name="category">
+                <option value="">Tất cả</option>
+                <% categories.forEach(cat => { %>
+                  <option value="<%= cat %>" <%= category === cat ? 'selected' : '' %>><%= cat %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Giá</label>
+              <select class="form-select" name="price">
+                <option value="">Tất cả</option>
+                <option value="0-5000000" <%= price === '0-5000000' ? 'selected' : '' %>>Dưới 5 triệu</option>
+                <option value="5000000-10000000" <%= price === '5000000-10000000' ? 'selected' : '' %>>5 - 10 triệu</option>
+                <option value="10000000-20000000" <%= price === '10000000-20000000' ? 'selected' : '' %>>10 - 20 triệu</option>
+                <option value="20000000-" <%= price === '20000000-' ? 'selected' : '' %>>Trên 20 triệu</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Đánh giá</label>
+              <select class="form-select" name="rating">
+                <option value="">Tất cả</option>
+                <option value="4" <%= rating === '4' ? 'selected' : '' %>>4 sao trở lên</option>
+                <option value="3" <%= rating === '3' ? 'selected' : '' %>>3 sao trở lên</option>
+                <option value="2" <%= rating === '2' ? 'selected' : '' %>>2 sao trở lên</option>
+                <option value="1" <%= rating === '1' ? 'selected' : '' %>>1 sao trở lên</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Lọc</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-9">
+      <!-- Product List -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Sản phẩm</h2>
+        <div class="sort-by">
+          <select class="form-select" id="sort-by">
+            <option value="createdAt">Mới nhất</option>
+            <option value="price">Giá: Thấp đến cao</option>
+            <option value="-price">Giá: Cao đến thấp</option>
+            <option value="-ratings">Đánh giá cao nhất</option>
+          </select>
+        </div>
+      </div>
+  
+      <div class="row">
+        <% products.forEach(product => { %>
+          <div class="col-md-6 col-lg-4 col-xl-3 mb-4">
+            <div class="card h-100 product-card">
+              <img src="<%= product.images[0].url %>" class="card-img-top" alt="<%= product.name %>">
+              <div class="card-body">
+                <h5 class="card-title"><%= product.name %></h5>
+                <div class="mb-2">
+                  <% for (let i = 1; i <= 5; i++) { %>
+                    <% if (i <= product.ratings) { %>
+                      <i class="fas fa-star text-warning"></i>
+                    <% } else if (i - 0.5 <= product.ratings) { %>
+                      <i class="fas fa-star-half-alt text-warning"></i>
+                    <% } else { %>
+                      <i class="far fa-star text-warning"></i>
+                    <% } %>
+                  <% } %>
+                  <span class="ms-1">(<%= product.numOfReviews %>)</span>
+                </div>
+                <h6 class="text-danger"><%= product.price.toLocaleString('vi-VN') %> ₫</h6>
+              </div>
+              <div class="card-footer bg-white border-top-0">
+                <a href="/<%=product._id %>" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
+                <button class="btn btn-primary btn-sm ms-2 add-to-cart" data-product-id="<%= product._id %>">
+                  <i class="fas fa-shopping-cart"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+  
+      <!-- Pagination -->
+      <% if (pagination.pages > 1) { %>
+        <nav aria-label="Page navigation">
+          <ul class="pagination justify-content-center">
+            <% if (pagination.current > 1) { %>
+              <li class="page-item">
+                <a class="page-link" href="?page=<%= pagination.current - 1 %>" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+            <% } %>
+  
+            <% for (let i = 1; i <= pagination.pages; i++) { %>
+              <li class="page-item <%= i === pagination.current ? 'active' : '' %>">
+                <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+              </li>
+            <% } %>
+  
+            <% if (pagination.current < pagination.pages) { %>
+              <li class="page-item">
+                <a class="page-link" href="?page=<%= pagination.current + 1 %>" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            <% } %>
+          </ul>
+        </nav>
+      <% } %>
+    </div>
+  </div>
+  
+  <script>
+    // Xử lý sự kiện khi click nút thêm vào giỏ hàng
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+      button.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        addToCart(productId);
+      });
+    });
+  
+    // Xử lý sắp xếp sản phẩm
+    document.getElementById('sort-by').addEventListener('change', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('sort', this.value);
+      window.location.href = url.toString();
+    });
+  
+    // Xử lý bộ lọc
+    document.getElementById('filter-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const params = new URLSearchParams(formData).toString();
+      window.location.href = `?${params}`;
+    });
+  </script>

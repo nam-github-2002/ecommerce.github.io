@@ -1,0 +1,97 @@
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Đăng ký tài khoản</h4>
+            </div>
+            <div class="card-body">
+                <form action="/auth/register" method="POST" id="register-form">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Họ và tên</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="name"
+                            name="name"
+                            required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="email"
+                            name="email"
+                            required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label"
+                            >Mật khẩu</label
+                        >
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="password"
+                            name="password"
+                            minlength="6"
+                            required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label"
+                            >Nhập lại mật khẩu</label
+                        >
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            minlength="6"
+                            required />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        Đăng ký
+                    </button>
+                </form>
+                <hr />
+                <div class="text-center">
+                    <p class="mb-0">
+                        Đã có tài khoản? <a href="/login">Đăng nhập ngay</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document
+        .getElementById('register-form')
+        .addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const password = document.getElementById('password').value;
+            const confirmPassword =
+                document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert('Mật khẩu không khớp!');
+                return;
+            }
+
+            const formData = new FormData(this);
+
+            fetch('/auth/register', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        window.location.href = data.redirectUrl || '/';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch((error) => console.error('Error:', error));
+        });
+</script>

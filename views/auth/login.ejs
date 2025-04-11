@@ -1,0 +1,108 @@
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Đăng nhập</h4>
+            </div>
+            <div class="card-body">
+                <form onsubmit="return false;" id="login-form">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="email"
+                            name="email"
+                            required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label"
+                            >Mật khẩu</label
+                        >
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="password"
+                            name="password"
+                            required />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="remember"
+                            name="remember" />
+                        <label class="form-check-label" for="remember"
+                            >Ghi nhớ đăng nhập</label
+                        >
+                    </div>
+                    <button
+                        type="button"
+                        id="loginBtn"
+                        class="btn btn-primary h-auto py-2 w-100">
+                        Đăng nhập
+                    </button>
+                </form>
+                <div class="mt-3 text-center">
+                    <a href="/forgot-password">Quên mật khẩu?</a>
+                </div>
+                <hr />
+                <div class="text-center">
+                    <p class="mb-0">
+                        Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginBtn = document.getElementById('loginBtn');
+        
+        if (loginBtn) {  // Kiểm tra tồn tại element
+            loginBtn.addEventListener('click', async function(e) {
+                console.log('Login button clicked!');
+                
+                const loginForm = document.getElementById('login-form');
+                const email = loginForm.querySelector('#email').value;
+                const password = loginForm.querySelector('#password').value;
+                const remember = loginForm.querySelector('#remember').checked;
+    
+                if (!email || !password) {
+                    alert('Vui lòng nhập đầy đủ email và mật khẩu');
+                    return;
+                }
+    
+                try {
+                    console.log('Sending request...');
+                    const response = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password, remember }),
+                    });
+    
+                    const data = await response.json();
+                    console.log('Response:', data);
+                    
+                    if (!data.success) {
+                        alert(data.message || 'Đăng nhập thất bại');
+                        return;
+                    }
+    
+                    // Xử lý merge giỏ hàng nếu cần
+                    // ... (giữ nguyên phần code merge cart của bạn)
+    
+                    window.location.href = data.redirectUrl || '/';
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('Đã xảy ra lỗi khi đăng nhập');
+                }
+            });
+        } else {
+            console.error('Không tìm thấy nút đăng nhập!');
+        }
+    });
+</script> -->

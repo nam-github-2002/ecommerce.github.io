@@ -1,0 +1,122 @@
+<script>
+    // Xử lý tăng giảm số lượng
+    document.querySelectorAll('.quantity .minus').forEach((button) => {
+        button.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            const input = this.nextElementSibling;
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+                updateCartItem(productId, input.value);
+            }
+        });
+    });
+
+    document.querySelectorAll('.quantity .plus').forEach((button) => {
+        button.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            const input = this.previousElementSibling;
+            input.value = parseInt(input.value) + 1;
+            updateCartItem(productId, input.value);
+        });
+    });
+
+    document.querySelectorAll('.quantity input').forEach((input) => {
+        input.addEventListener('change', function () {
+            const productId = this.getAttribute('data-product-id');
+            updateCartItem(productId, this.value);
+        });
+    });
+
+    // Xử lý xóa sản phẩm
+    document.querySelectorAll('.remove-item').forEach((button) => {
+        button.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            removeFromCart(productId);
+        });
+    });
+
+    // Xử lý xóa giỏ hàng
+    if (document.getElementById('clear-cart')) {
+        document
+            .getElementById('clear-cart')
+            .addEventListener('click', function () {
+                clearCart();
+            });
+    }
+
+    // Hàm cập nhật giỏ hàng
+    function updateCartItem(productId, quantity) {
+        if (currentUser) {
+            // Nếu đã đăng nhập, gửi request đến server
+            fetch('/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    productId: productId,
+                    quantity: quantity,
+                }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+        } else {
+            // Nếu chưa đăng nhập, cập nhật localStorage
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const itemIndex = cart.findIndex(
+                (item) => item.productId === productId
+            );
+
+            if (itemIndex !== -1) {
+                cart[itemIndex].quantity = parseInt(quantity);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCartUI();
+                location.reload();
+            }
+        }
+    }
+
+    // Hàm xóa sản phẩm khỏi giỏ hàng
+    function removeFromCart(productId) {
+        if (currentUser) {
+            fetch(`/cart/${productId}`, {
+                method: 'DELETE',
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+        } else {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart = cart.filter((item) => item.productId !== productId);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartUI();
+            location.reload();
+        }
+    }
+
+    // Hàm xóa toàn bộ giỏ hàng
+    function clearCart() {
+        if (currentUser) {
+            fetch('/cart', {
+                method: 'DELETE',
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        location.reload();
+                    }
+                });
+        } else {
+            localStorage.removeItem('cart');
+            updateCartUI();
+            location.reload();
+        }
+    }
+</script>

@@ -1,0 +1,105 @@
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* Header Styles */
+.top-header {
+    font-size: 0.9rem;
+}
+
+.main-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Product Card */
+.product-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.product-card .card-img-top {
+    height: 200px;
+    object-fit: contain;
+    padding: 20px;
+}
+
+.product-card .card-body {
+    padding: 1rem;
+}
+
+.product-card .card-footer {
+    padding: 0.75rem 1rem;
+    background-color: #fff;
+}
+
+/* Quantity Input */
+.quantity input {
+    width: 50px;
+    text-align: center;
+    display: inline-block;
+}
+
+/* Alert Position */
+.alert.position-fixed {
+    right: 20px;
+    top: 20px;
+    z-index: 9999;
+}
+
+/* Cart Table */
+.table th {
+    border-top: none;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .product-card .card-img-top {
+        height: 150px;
+    }
+
+    .main-header .logo {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Badge */
+.badge {
+    font-size: 0.6rem;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    min-width: 200px;
+}
+
+/* Avatar */
+.rounded-circle {
+    object-fit: cover;
+}
