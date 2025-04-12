@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 // Bảo vệ route với JWT
 exports.protect = async (req, res, next) => {
@@ -12,13 +13,14 @@ exports.protect = async (req, res, next) => {
         return res.status(401).json({
             success: false,
             message: 'Vui lòng đăng nhập để truy cập',
-
         });
     }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id);
+
+        req.user = await User.findOne({ _id: decoded.id });
+        
         next();
     } catch (err) {
         return res.status(401).json({

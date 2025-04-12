@@ -166,8 +166,8 @@
         </div>
         <% } else { %>
         <div class="alert alert-info">
-            Vui lòng <a href="/auth/login" class="alert-link">đăng nhập</a> để đánh
-            giá sản phẩm này.
+            Vui lòng <a href="/auth/login" class="alert-link">đăng nhập</a> để
+            đánh giá sản phẩm này.
         </div>
         <% } %>
     </div>
@@ -237,16 +237,20 @@
     if (document.getElementById('review-form')) {
         document
             .getElementById('review-form')
-            .addEventListener('submit', function (e) {
+            .addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const formData = new FormData(this);
 
-                fetch(`/products/<%= product._id %>/reviews`, {
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+
+                await fetch(`/product/<%= product._id %>/review`, {
                     method: 'POST',
-                    body: formData,
                     headers: {
                         'X-CSRF-TOKEN': '<%= token %>',
                     },
+                    body: formData,
                 })
                     .then((response) => response.json())
                     .then((data) => {
@@ -259,4 +263,25 @@
                     .catch((error) => console.error('Error:', error));
             });
     }
+
+    document.addEventListener('DOMContentLoaded',async function () {
+        // Lấy product ID từ biến EJS
+        const productId = '<%= product._id %>';
+
+        // Gửi GET request để cập nhật đánh giá
+       await fetch(`/product/${productId}/review`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log('Đánh giá đã được cập nhật:', data);
+                // Bạn có thể thêm logic xử lý dữ liệu trả về ở đây
+            })
+            .catch((error) => {
+                console.error('Có lỗi khi tải đánh giá:', error);
+            });
+    });
 </script>

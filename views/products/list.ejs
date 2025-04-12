@@ -12,7 +12,7 @@
               <select class="form-select" name="category">
                 <option value="">Tất cả</option>
                 <% categories.forEach(cat => { %>
-                  <option value="<%= cat %>" <%= category === cat ? 'selected' : '' %>><%= cat %></option>
+                  <option value="<%= cat.name %>" <%= category === cat.name ? 'selected' : '' %>><%= cat.name %></option>
                 <% }) %>
               </select>
             </div>
@@ -77,7 +77,7 @@
                 <h6 class="text-danger"><%= product.price.toLocaleString('vi-VN') %> ₫</h6>
               </div>
               <div class="card-footer bg-white border-top-0">
-                <a href="/<%=product._id %>" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
+                <a href="/product/<%=product._id %>" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
                 <button class="btn btn-primary btn-sm ms-2 add-to-cart" data-product-id="<%= product._id %>">
                   <i class="fas fa-shopping-cart"></i>
                 </button>
@@ -119,14 +119,6 @@
   </div>
   
   <script>
-    // Xử lý sự kiện khi click nút thêm vào giỏ hàng
-    document.querySelectorAll('.add-to-cart').forEach(button => {
-      button.addEventListener('click', function() {
-        const productId = this.getAttribute('data-product-id');
-        addToCart(productId);
-      });
-    });
-  
     // Xử lý sắp xếp sản phẩm
     document.getElementById('sort-by').addEventListener('change', function() {
       const url = new URL(window.location.href);

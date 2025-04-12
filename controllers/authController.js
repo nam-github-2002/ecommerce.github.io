@@ -71,7 +71,7 @@ exports.registerUser = async (req, res, next) => {
             success: true,
             token,
             currentUser,
-            redirectUrl: '/login',
+            redirectUrl: '/auth/login',
         });
     } catch (err) {
         res.status(500).json({
@@ -136,7 +136,7 @@ exports.loginUser = async (req, res, next) => {
                 avatar: user.avatar,
                 email: user.email,
             },
-            redirectUrl: req.params.redirect || '/product',
+            redirectUrl: req.body.redirectUrl || '/product',
         });
     } catch (err) {
         res.status(500).json({
@@ -148,15 +148,15 @@ exports.loginUser = async (req, res, next) => {
 
 // Đăng xuất người dùng
 exports.logoutUser = (req, res, next) => {
-    res.cookie('jwt', 'none', {
-        expires: new Date(Date.now() + 10 * 1000),
+    res.cookie('jwt', '', {
+        expires: new Date(Date.now()),
         httpOnly: true,
     });
 
     res.status(200).json({
         success: true,
         message: 'Đã đăng xuất',
-        redirectUrl: '/',
+        redirectUrl: '/product',
     });
 };
 

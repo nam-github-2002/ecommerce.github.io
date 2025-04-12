@@ -7,14 +7,18 @@ const {
     addToCart,
     removeFromCart,
     clearCart,
+    mergeCart,
+    getCartCount,
+    updateCart
 } = require('../controllers/cartController');
 
 router
     .route('/checkout')
-    .get( getCart)
+    .get( protect, getCart)
     .post(protect, addToCart)
     .delete(protect, clearCart);
-
+router.route('/merge').post(protect,mergeCart)
 router.route('/:productId').delete(protect, removeFromCart);
-
+router.route('/cart-count').get(protect, getCartCount);
+router.post('/update', protect, updateCart)
 module.exports = router;

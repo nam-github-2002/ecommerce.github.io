@@ -1,122 +1,129 @@
-<script>
-    // Xử lý tăng giảm số lượng
-    document.querySelectorAll('.quantity .minus').forEach((button) => {
-        button.addEventListener('click', function () {
-            const productId = this.getAttribute('data-product-id');
-            const input = this.nextElementSibling;
-            if (parseInt(input.value) > 1) {
-                input.value = parseInt(input.value) - 1;
-                updateCartItem(productId, input.value);
-            }
-        });
-    });
+<div class="cart-container">
+    <h2 class="mb-4">Giỏ hàng của bạn</h2>
 
-    document.querySelectorAll('.quantity .plus').forEach((button) => {
-        button.addEventListener('click', function () {
-            const productId = this.getAttribute('data-product-id');
-            const input = this.previousElementSibling;
-            input.value = parseInt(input.value) + 1;
-            updateCartItem(productId, input.value);
-        });
-    });
+    <% if (cartItems && cartItems.length > 0) { %>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" width="50px">#</th>
+                    <th scope="col">Sản phẩm</th>
+                    <th scope="col" width="120px">Giá</th>
+                    <th scope="col" width="150px">Số lượng</th>
+                    <th scope="col" width="120px">Tổng</th>
+                    <th scope="col" width="50px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <% cartItems.forEach((item, index) => { %>
+                <tr class="cart-item" data-product-id="<%= item.product.id %>">
+                    <th scope="row"><%= index + 1 %></th>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img
+                                src="<%= item.product.images[0].url || '/images/default-product.jpg' %>"
+                                alt="<%= item.product.name %>"
+                                class="img-thumbnail me-3"
+                                width="80" />
+                            <div>
+                                <h5 class="mb-1"><%= item.product.name %></h5>
+                                <% if (item.color || item.size) { %>
+                                <p class="text-muted mb-0">
+                                    <%= item.color ? `Màu: ${item.color}` : ''
+                                    %> <%= item.size ? `Size: ${item.size}` : ''
+                                    %>
+                                </p>
+                                <% } %>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="price">
+                        <%= item.product.price.toLocaleString() %>₫
+                    </td>
+                    <td>
+                        <div class="quantity d-flex align-items-center">
+                            <button
+                                class="btn btn-sm btn-outline-secondary minus"
+                                data-product-id="<%= item.product.id %>">
+                                -
+                            </button>
+                            <input
+                                type="number"
+                                class="form-control form-control-sm text-center mx-2"
+                                value="<%= item.quantity %>"
+                                min="1"
+                                data-product-id="<%= item.product.id %>" />
+                            <button
+                                class="btn btn-sm btn-outline-secondary plus"
+                                data-product-id="<%= item.product.id %>">
+                                +
+                            </button>
+                        </div>
+                    </td>
+                    <td class="total-price">
+                        <%= (item.product.price *
+                        item.quantity).toLocaleString() %>₫
+                    </td>
+                    <td>
+                        <button
+                            class="btn btn-danger btn-sm remove-item"
+                            data-product-id="<%= item.product.id %>">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
 
-    document.querySelectorAll('.quantity input').forEach((input) => {
-        input.addEventListener('change', function () {
-            const productId = this.getAttribute('data-product-id');
-            updateCartItem(productId, this.value);
-        });
-    });
-
-    // Xử lý xóa sản phẩm
-    document.querySelectorAll('.remove-item').forEach((button) => {
-        button.addEventListener('click', function () {
-            const productId = this.getAttribute('data-product-id');
-            removeFromCart(productId);
-        });
-    });
-
-    // Xử lý xóa giỏ hàng
-    if (document.getElementById('clear-cart')) {
-        document
-            .getElementById('clear-cart')
-            .addEventListener('click', function () {
-                clearCart();
-            });
-    }
-
-    // Hàm cập nhật giỏ hàng
-    function updateCartItem(productId, quantity) {
-        if (currentUser) {
-            // Nếu đã đăng nhập, gửi request đến server
-            fetch('/cart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    productId: productId,
-                    quantity: quantity,
-                }),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        location.reload();
-                    }
-                });
-        } else {
-            // Nếu chưa đăng nhập, cập nhật localStorage
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const itemIndex = cart.findIndex(
-                (item) => item.productId === productId
-            );
-
-            if (itemIndex !== -1) {
-                cart[itemIndex].quantity = parseInt(quantity);
-                localStorage.setItem('cart', JSON.stringify(cart));
-                updateCartUI();
-                location.reload();
-            }
-        }
-    }
-
-    // Hàm xóa sản phẩm khỏi giỏ hàng
-    function removeFromCart(productId) {
-        if (currentUser) {
-            fetch(`/cart/${productId}`, {
-                method: 'DELETE',
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        location.reload();
-                    }
-                });
-        } else {
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            cart = cart.filter((item) => item.productId !== productId);
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartUI();
-            location.reload();
-        }
-    }
-
-    // Hàm xóa toàn bộ giỏ hàng
-    function clearCart() {
-        if (currentUser) {
-            fetch('/cart', {
-                method: 'DELETE',
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        location.reload();
-                    }
-                });
-        } else {
-            localStorage.removeItem('cart');
-            updateCartUI();
-            location.reload();
-        }
-    }
-</script>
+    <div class="row justify-content-end">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Tổng cộng</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tạm tính:</span>
+                        <span class="subtotal"
+                            ><%= subTotal.toLocaleString() %>₫</span
+                        >
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Phí vận chuyển:</span>
+                        <span class="shipping-fee"
+                            ><%= shippingFee.toLocaleString() %>₫</span
+                        >
+                    </div>
+                    <hr />
+                    <div class="d-flex justify-content-between fw-bold fs-5">
+                        <span>Thành tiền:</span>
+                        <span class="grand-total"
+                            ><%= (subTotal + shippingFee).toLocaleString()
+                            %>₫</span
+                        >
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button
+                            class="btn btn-primary btn-lg"
+                            id="checkout-btn">
+                            Tiến hành thanh toán
+                        </button>
+                        <button class="btn btn-outline-danger" id="clear-cart">
+                            Xóa giỏ hàng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } else { %>
+    <div class="alert alert-info text-center py-5">
+        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+        <h4>Giỏ hàng của bạn đang trống</h4>
+        <p class="mb-0">Hãy thêm sản phẩm để bắt đầu mua sắm</p>
+        <a href="/product" class="btn btn-primary mt-3">
+            <i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm
+        </a>
+    </div>
+    <% } %>
+</div>

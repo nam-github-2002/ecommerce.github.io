@@ -103,3 +103,17 @@ a {
 .rounded-circle {
     object-fit: cover;
 }
+
+.cart-container {
+    min-height: 60vh;
+}
+.quantity input {
+    width: 50px;
+}
+.total-price,
+.price {
+    font-weight: bold;
+}
+.remove-item {
+    width: 100%;
+}

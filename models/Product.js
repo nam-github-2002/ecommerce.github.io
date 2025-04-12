@@ -58,6 +58,36 @@ const productSchema = new mongoose.Schema({
         maxlength: [5, 'Số lượng sản phẩm không vượt quá 5 chữ số'],
         default: 0,
     },
+    // Thêm trường màu sắc (có thể chọn nhiều màu)
+    colors: {
+        type: [{
+            name: String,
+            code: String, // Mã màu hex (ví dụ: #FF0000)
+            images: [{  // Ảnh riêng cho từng màu (nếu cần)
+                public_id: String,
+                url: String
+            }]
+        }],
+        default: []
+    },
+    // Thêm trường kích thước (tùy theo loại sản phẩm)
+    sizes: {
+        type: [{
+            name: String,
+            additionalPrice: {  // Giá chênh lệch nếu có
+                type: Number,
+                default: 0
+            }
+        }],
+        default: []
+    },
+    // Thêm trường biến thể (kết hợp màu + size)
+    variants: [{
+        color: String,
+        size: String,
+        stock: Number,
+        sku: String // Mã sản phẩm riêng cho biến thể
+    }],
     numOfReviews: {
         type: Number,
         default: 0,
@@ -81,6 +111,8 @@ const productSchema = new mongoose.Schema({
                 type: String,
                 required: true,
             },
+            color: String,  // Màu sản phẩm đã mua
+            size: String   // Size sản phẩm đã mua
         },
     ],
     user: {
@@ -92,6 +124,8 @@ const productSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+}, {
+    timestamps: true // Tự động thêm createdAt và updatedAt
 });
 
 module.exports = mongoose.model('Product', productSchema);

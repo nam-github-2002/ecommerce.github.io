@@ -1,13 +1,11 @@
 const Product = require('../models/Product');
+const User = require('../models/User');
 const ProductCategory = require('../models/ProductCategory');
 const ErrorResponse = require('../utils/ErrorResponse');
 const asyncHandler = require('express-async-handler');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 
-// @desc    Get all products
-// @route   GET /api/v1/products
-// @access  Public
-// Trong controllers/productController.js
 exports.getProducts = async (req, res) => {
     try {
         // Lấy tham số từ query (phân trang, lọc, sắp xếp)
@@ -58,9 +56,7 @@ exports.getProducts = async (req, res) => {
         const totalPages = Math.ceil(totalProducts / limit);
 
         // Lấy danh sách categories để hiển thị trong filter
-        const categories = await ProductCategory.find({})
-            .select('name') // Thêm slug nếu có
-            .sort({ name: 1 }); // Sắp xếp theo tên
+        const categories = await ProductCategory.find({});
 
         // Chuẩn bị dữ liệu pagination
         const pagination = {
@@ -76,6 +72,7 @@ exports.getProducts = async (req, res) => {
             products,
             categories,
             pagination,
+            category: req.query.category,
             price: req.query.price,
             rating: req.query.rating,
             currentSort: req.query.sort,
@@ -86,32 +83,31 @@ exports.getProducts = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-// @desc    Get single product
-// @route   GET /api/v1/products/:id
-// @access  Public
+
 exports.getProduct = async (req, res, next) => {
-    const product = await Product.findById(req.params.id);
+    try {
+        const product = await Product.findById(req.params.id);
 
-    // Lấy header Authorization
-    const authHeader = req.headers.authorization;
+        const token = req.cookies.jwt || null;
+        if (token) {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    let token = null;
+            const user = await User.findById(decoded.id);
+            req.user = user;
+        }
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        // Tách token ra khỏi chuỗi "Bearer "
-        token = authHeader.split(' ')[1];
+        res.render('products/detail', {
+            title: product.name,
+            product,
+            token,
+            currentUser: req.user || null,
+            redirectUrl: req.originalUrl,
+        });
+    } catch (error) {
+        next(error);
     }
-
-    // Render view
-    res.render('products/detail', {
-        title: product.name,
-        product,
-        token,
-    });
 };
-// @desc    Create new product
-// @route   POST /api/v1/products
-// @access  Private/Admin
+
 exports.createProduct = asyncHandler(async (req, res, next) => {
     // Add user to req.body
     req.body.user = req.user.id;
@@ -124,9 +120,6 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
     });
 });
 
-// @desc    Update product
-// @route   PUT /api/v1/products/:id
-// @access  Private/Admin
 exports.updateProduct = asyncHandler(async (req, res, next) => {
     let product = await Product.findById(req.params.id);
 
@@ -160,9 +153,6 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
     });
 });
 
-// @desc    Delete product
-// @route   DELETE /api/v1/products/:id
-// @access  Private/Admin
 exports.deleteProduct = asyncHandler(async (req, res, next) => {
     const product = await Product.findById(req.params.id);
 
@@ -193,9 +183,6 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
     });
 });
 
-// @desc    Upload photo for product
-// @route   PUT /api/v1/products/:id/photo
-// @access  Private
 exports.uploadProductPhoto = asyncHandler(async (req, res, next) => {
     const product = await Product.findById(req.params.id);
 
@@ -248,3 +235,106 @@ exports.uploadProductPhoto = asyncHandler(async (req, res, next) => {
         });
     });
 });
+
+// Controller để tạo/cập nhật đánh giá sản phẩm
+exports.createProductReview = async (req, res, next) => {
+    try {
+        const { rating, comment, color, size } = req.body;
+
+        const review = {
+            user: req.user._id,
+            name: req.user.name,
+            rating: Number(rating),
+            comment,
+            color,
+            size,
+        };
+
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return next(new ErrorHandler('Không tìm thấy sản phẩm', 404));
+        }
+
+        // Thêm đánh giá mới
+        product.reviews.push(review);
+        product.numOfReviews = product.reviews.length;
+
+        // Tính toán lại rating trung bình
+        product.ratings =
+            product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+            product.reviews.length;
+
+        await product.save({ validateBeforeSave: false });
+
+        res.status(200).json({
+            success: true,
+            message: 'Đánh giá đã được cập nhật thành công',
+        });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+};
+
+// Controller để lấy tất cả reviews của sản phẩm
+exports.getProductReviews = async (req, res, next) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return next(new ErrorHandler('Không tìm thấy sản phẩm', 404));
+        }
+
+        res.status(200).json({
+            success: true,
+            product,
+        });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+};
+
+// Controller để xóa review
+exports.deleteReview = async (req, res, next) => {
+    try {
+        const product = await Product.findById(req.params.productId);
+
+        if (!product) {
+            return next(new ErrorHandler('Không tìm thấy sản phẩm', 404));
+        }
+
+        // Lọc ra các review không phải là review cần xóa
+        const reviews = product.reviews.filter(
+            (review) => review._id.toString() !== req.params.reviewId.toString()
+        );
+
+        // Cập nhật số lượng review và rating trung bình
+        const numOfReviews = reviews.length;
+        const ratings =
+            numOfReviews > 0
+                ? reviews.reduce((acc, item) => item.rating + acc, 0) /
+                  numOfReviews
+                : 0;
+
+        await Product.findByIdAndUpdate(
+            req.params.productId,
+            {
+                reviews,
+                ratings,
+                numOfReviews,
+            },
+            {
+                new: true,
+                runValidators: true,
+                useFindAndModify: false,
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Đánh giá đã được xóa thành công',
+        });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+};

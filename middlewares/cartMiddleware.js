@@ -1,5 +1,4 @@
 const Cart = require('../models/Cart');
-const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('express-async-handler');
 
 // Middleware to check if cart exists

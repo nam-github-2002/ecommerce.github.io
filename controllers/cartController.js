@@ -1,5 +1,7 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 
 // Lấy giỏ hàng
 exports.getCart = async (req, res, next) => {
@@ -10,10 +12,12 @@ exports.getCart = async (req, res, next) => {
         });
 
         if (!cart) {
-            return res.status(200).json({
+            return res.status(200).render('cart/checkout', {
                 success: true,
+                title: 'Giỏ hàng',
                 cartItems: [],
                 subTotal: 0,
+                shippingFee: 0,
             });
         }
 
@@ -21,10 +25,12 @@ exports.getCart = async (req, res, next) => {
             return total + item.product.price * item.quantity;
         }, 0);
 
-        res.status(200).json({
+        res.status(200).render('cart/checkout', {
             success: true,
+            title: 'Giỏ hàng',
             cartItems: cart.cartItems,
             subTotal,
+            shippingFee: 0,
         });
     } catch (err) {
         res.status(500).json({
@@ -38,6 +44,7 @@ exports.getCart = async (req, res, next) => {
 exports.addToCart = async (req, res, next) => {
     try {
         const { productId, quantity } = req.body;
+        console.log(productId, quantity);
 
         const product = await Product.findById(productId);
         if (!product) {
@@ -53,7 +60,7 @@ exports.addToCart = async (req, res, next) => {
             cart = await Cart.create({
                 user: req.user.id,
                 cartItems: [
-                    { product: productId, quantity, price: product.price },
+                    { product: product, quantity, price: product.price },
                 ],
             });
         } else {
@@ -104,8 +111,8 @@ exports.addToCart = async (req, res, next) => {
 // Xóa sản phẩm khỏi giỏ hàng
 exports.removeFromCart = async (req, res, next) => {
     try {
-        const { productId } = req.params;
-
+        const productId = req.params;
+        console.log('productId: ',productId)
         const cart = await Cart.findOne({ user: req.user.id });
         if (!cart) {
             return res.status(404).json({
@@ -160,13 +167,15 @@ exports.mergeCart = async (req, res, next) => {
             // Nếu chưa có giỏ hàng, tạo mới
             const cartItems = items.map((item) => ({
                 product: item.productId,
-                quantity: item.quantity,
+                quantity: item.quantity || 1,
+                price: item.price,
             }));
 
-            cart = await Cart.create({
+            cart = new Cart({
                 user: req.user.id,
                 cartItems,
             });
+            await cart.save();
         } else {
             // Nếu đã có giỏ hàng, merge với local
             for (const item of items) {
@@ -199,6 +208,7 @@ exports.mergeCart = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
+            cart,
             count: cartCount,
         });
     } catch (err) {
@@ -228,3 +238,31 @@ exports.getCartCount = async (req, res, next) => {
         });
     }
 };
+
+exports.updateCart = async (req, res, next) => {
+    try {
+        const { updates } = req.body;
+        const cart = await Cart.findOne({ user: req.user.id });
+        
+        for (const update of updates) {
+            if (update.action === 'remove') {
+                cart.cartItems = cart.cartItems.filter(
+                    item => item.product.toString() !== update.productId
+                );
+            } else {
+                const itemIndex = cart.cartItems.findIndex(
+                    item => item.product.toString() === update.productId
+                );
+                
+                if (itemIndex >= 0) {
+                    cart.cartItems[itemIndex].quantity = update.quantity;
+                }
+            }
+        }
+        
+        await cart.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+}
