@@ -1,33 +1,76 @@
-// Hàm tải nội dung bằng Fetch API
 async function loadContent(url, targetId = 'dynamic-content') {
     try {
-        //Request
+        // Show loading state
+        document.getElementById(targetId).innerHTML =
+            '<div class="loading">Loading...</div>';
+
+        // Request with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
         const response = await fetch(url, {
             credentials: 'include',
+            signal: controller.signal,
         });
 
-        if (!response.ok) throw new Error('Network error');
+        clearTimeout(timeoutId);
 
-        //Response
+        // Handle HTTP errors
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+                `HTTP error! status: ${response.status}` +
+                    (errorData.message ? ` - ${errorData.message}` : '')
+            );
+        }
+
+        // Process response
         const html = await response.text();
         const parser = new DOMParser();
         const responseDoc = parser.parseFromString(html, 'text/html');
 
-        if (responseDoc.getElementsByTagName('header').length > 0) {
-            //Lấy phần trong thẻ main
-            document.getElementById(targetId).innerHTML =
-                responseDoc.getElementById(targetId).innerHTML;
-        } else {
-            document.getElementById(targetId).innerHTML = html;
+        // Check for server-side errors in the response
+        const errorElement = responseDoc.querySelector(
+            '.error-message, .server-error'
+        );
+        if (errorElement) {
+            throw new Error(`Server error: ${errorElement.textContent.trim()}`);
         }
 
-        // Gắn lại sự kiện sau khi load nội dung mới
-        location.href = url;
-        checkAuthStatus();
+        // Update content
+        const targetElement = document.getElementById(targetId);
+        if (responseDoc.getElementsByTagName('header').length > 0) {
+            const sourceElement = responseDoc.getElementById(targetId);
+            if (sourceElement) {
+                targetElement.innerHTML = sourceElement.innerHTML;
+            } else {
+                throw new Error(
+                    `Target element #${targetId} not found in response`
+                );
+            }
+        } else {
+            targetElement.innerHTML = html;
+        }
+
+        // Reinitialize components
+        syncCartToServer()
         setupLoginForm();
         setupGlobalEventListeners();
     } catch (error) {
         console.error('Failed to load content:', error);
+
+        // Show user-friendly error message
+        const errorMessage =
+            error.name === 'AbortError'
+                ? 'Request timed out. Please try again.'
+                : `Failed to load content: ${error.message}`;
+
+        document.getElementById(targetId).innerHTML = `
+            <div class="error-message">
+                ${errorMessage}
+                <button onclick="loadContent('${url}', '${targetId}')">Retry</button>
+            </div>
+        `;
     }
 }
 
@@ -35,7 +78,7 @@ async function loadContent(url, targetId = 'dynamic-content') {
 async function checkAuthStatus() {
     try {
         const response = await fetch('/auth/check', {
-            credentials: 'include'
+            credentials: 'include',
         });
 
         if (!response.ok) {
@@ -43,7 +86,7 @@ async function checkAuthStatus() {
         }
 
         const data = await response.json();
-        
+
         if (data.isAuthenticated && data.user) {
             updateHeader(data.user);
             return data.user;
@@ -90,13 +133,12 @@ function setupLoginForm() {
                 });
 
                 const data = await response.json();
-                
+
                 if (!data.success) {
                     alert(data.message || 'Đăng nhập thất bại');
                     return;
                 }
 
-               
                 localStorage.setItem('userId', data.currentUser._id);
 
                 const localCart =
@@ -193,9 +235,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setupGlobalEventListeners(); // Sự kiện delegation
     checkAuthStatus(); // Kiểm tra đăng nhập
     setupLoginForm(); // Form đăng nhập
+    syncCartToServer();
     updateCartUI();
     updateOrderSummary();
-    syncCartToServer();
 });
 
 document.addEventListener('click', (e) => {
@@ -246,9 +288,10 @@ function setupGlobalEventListeners() {
         //6. Đăng xuất
         else if (target.matches('a[href="/auth/logout"]')) {
             e.preventDefault();
+            localStorage.removeItem('userId');
             let currentUrl = window.location.href;
             loadContent('/auth/logout');
-            localStorage.removeItem('userId')
+            location.href = currentUrl
         }
 
         //7. Thông tin khách hàng

@@ -43,7 +43,7 @@ exports.getCart = async (req, res, next) => {
 // Thêm sản phẩm vào giỏ hàng
 exports.addToCart = async (req, res, next) => {
     try {
-        const { productId, quantity ,price } = req.body;
+        const { productId, quantity, price } = req.body;
         console.log(productId, quantity);
 
         const product = await Product.findById(productId);
@@ -59,9 +59,7 @@ exports.addToCart = async (req, res, next) => {
         if (!cart) {
             cart = await Cart.create({
                 user: req.user.id,
-                cartItems: [
-                    { product: product, quantity, price},
-                ],
+                cartItems: [{ product: product, quantity, price }],
             });
         } else {
             // Kiểm tra sản phẩm đã có trong giỏ hàng chưa
@@ -242,58 +240,81 @@ exports.getCartCount = async (req, res, next) => {
 // Cập nhật hàm xử lý trong cartController.js
 exports.updateCart = async (req, res) => {
     try {
-        const { userId, items = [] } = req.body;
+        console.log('Received:', req.body);
+        const { userId, items } = req.body;
 
         if (!userId) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'User ID is required' 
+                message: 'User ID required',
             });
         }
 
-        // Lọc sản phẩm có quantity > 0
-        const validItems = items.filter(item => item.quantity > 0);
+        // Validate items
+        const validItems = items.filter(
+            (item) => item.productId && Number(item.quantity) > 0 && item.price
+        );
 
-        // Nếu không còn sản phẩm hợp lệ -> xoá cart
         if (validItems.length === 0) {
             await Cart.deleteOne({ user: userId });
-            return res.status(200).json({ 
+            return res.json({
                 success: true,
-                message: 'Cart deleted (empty)' 
+                message: 'Cart cleared',
             });
         }
 
-        // Cập nhật cart
         let cart = await Cart.findOne({ user: userId });
-        
+
         if (!cart) {
-            cart = new Cart({ 
+            cart = new Cart({
                 user: userId,
-                cartItems: validItems.map(item => ({
+                cartItems: validItems.map((item) => ({
                     product: item.productId,
-                    quantity: item.quantity,
-                    price: item.price
-                }))
+                    quantity: Number(item.quantity),
+                    price: Number(item.price),
+                })),
             });
         } else {
-            cart.cartItems = validItems.map(item => ({
-                product: item.productId,
-                quantity: item.quantity,
-                price: item.price
-            }));
+            // Cập nhật từng sản phẩm, không ghi đè toàn bộ
+            validItems.forEach((newItem) => {
+                const existingItem = cart.cartItems.find(
+                    (i) => i.product.toString() === newItem.productId
+                );
+
+                if (existingItem) {
+                    existingItem.quantity = Number(newItem.quantity);
+                    existingItem.price = Number(newItem.price);
+                } else {
+                    cart.cartItems.push({
+                        product: newItem.productId,
+                        quantity: Number(newItem.quantity),
+                        price: Number(newItem.price),
+                    });
+                }
+            });
+
+            // Xóa các items không còn trong validItems
+            cart.cartItems = cart.cartItems.filter((item) =>
+                validItems.some(
+                    (newItem) => newItem.productId === item.product.toString()
+                )
+            );
         }
 
         await cart.save();
 
-        res.status(200).json({
+        // Debug: Log kết quả
+        console.log('Updated cart:', cart);
+
+        res.json({
             success: true,
-            data: cart
+            data: cart,
         });
     } catch (error) {
-        console.error('Error updating cart:', error);
+        console.error('Update error:', error);
         res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message,
         });
     }
 };
