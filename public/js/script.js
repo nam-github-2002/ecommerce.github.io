@@ -21,6 +21,7 @@ async function loadContent(url, targetId = 'dynamic-content') {
             document.getElementById(targetId).innerHTML = html;
         }
 
+        // window.location.href = url;
         // Gắn lại sự kiện sau khi load nội dung mới
         checkAuthStatus();
         setupLoginForm();
@@ -67,7 +68,7 @@ function setupLoginForm() {
                         email,
                         password,
                         remember,
-                        redirectUrl
+                        redirectUrl,
                     }),
                 });
 
@@ -80,18 +81,24 @@ function setupLoginForm() {
 
                 const localCart =
                     JSON.parse(localStorage.getItem('cart')) || [];
-
                 if (localCart.length > 0) mergeCartWithServer();
 
                 updateHeader(data.currentUser);
-
-                // Chuyển hướng
                 loadContent(data.redirectUrl || '/product');
+                location.reload();
             } catch (error) {
                 console.error('Login error:', error);
                 alert('Đã xảy ra lỗi khi đăng nhập');
             }
         });
+    }
+}
+
+// Hàm cập nhật số lượng trên icon giỏ hàng
+function updateCartCount(count) {
+    const cartCountElement = document.getElementById('cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = count;
     }
 }
 
@@ -163,19 +170,23 @@ document.addEventListener('submit', function (e) {
     }
 });
 
+document.addEventListener('DOMContentLoaded', function () {
+    setupGlobalEventListeners(); // Sự kiện delegation
+    checkAuthStatus(); // Kiểm tra đăng nhập
+    setupLoginForm(); // Form đăng nhập
+    updateCartUI();
+    updateOrderSummary();
+    syncCartToServer();
+});
+
 document.addEventListener('click', function (e) {
     // Xử lý nút thêm vào giỏ hàng
     if (e.target.closest('.add-to-cart')) {
         e.preventDefault();
         const productId = e.target.closest('.add-to-cart').dataset.productId;
-        addToCart(productId);
+        const price = e.target.closest('.add-to-cart').dataset.price;
+        addToCart(productId, 1, price);
     }
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-    setupGlobalEventListeners(); // Sự kiện delegation
-    checkAuthStatus(); // Kiểm tra đăng nhập
-    setupLoginForm(); // Form đăng nhập
 });
 
 function setupGlobalEventListeners() {
@@ -218,8 +229,14 @@ function setupGlobalEventListeners() {
             e.preventDefault();
             let currentUrl = window.location.href;
             loadContent('/auth/logout');
-            window.location.href = currentUrl;
-            window.location.reload()
+            // window.location.href = currentUrl;
+            location.reload();
+        } 
+        
+        else if (target.matches('a[href="/auth/me"]')) {
+            e.preventDefault();
+            loadContent('/auth/me');
+            location.reload();
         }
     });
 }

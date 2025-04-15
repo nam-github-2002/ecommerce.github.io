@@ -131,11 +131,7 @@ exports.loginUser = async (req, res, next) => {
         res.status(200).json({
             success: true,
             token,
-            currentUser: {
-                name: user.name,
-                avatar: user.avatar,
-                email: user.email,
-            },
+            currentUser: user,
             redirectUrl: req.body.redirectUrl || '/product',
         });
     } catch (err) {

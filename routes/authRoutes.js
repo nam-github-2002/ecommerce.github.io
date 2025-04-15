@@ -33,4 +33,5 @@ router.get('/check', protect, (req, res) => {
         }
     });
 });
+
 module.exports = router;

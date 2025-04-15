@@ -8,6 +8,8 @@ const session = require('express-session');
 const flash = require('connect-flash');
 const passport = require('passport');
 const ejsLayouts = require('express-ejs-layouts');
+const methodOverride = require('method-override');
+
 
 // Khởi tạo app
 const app = express();
@@ -20,6 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Session và Flash
 app.use(
@@ -51,6 +54,10 @@ app.use((req, res, next) => {
     res.locals.error = req.flash('error');
     next();
 });
+
+
+app.use(methodOverride('_method')); // Cho phép ghi đè method từ query string
+
 
 // Routes
 //Product

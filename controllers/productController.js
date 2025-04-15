@@ -38,6 +38,11 @@ exports.getProducts = async (req, res) => {
             if (max) query.price.$lte = parseInt(max);
         }
 
+        // Rating filter (fixed this part)
+        if (req.query.rating) {
+            query.ratings = { $gte: parseInt(req.query.rating) };
+        }
+
         // Sắp xếp
         let sort = { createdAt: -1 }; // Mặc định sắp xếp mới nhất
         if (req.query.sort) {
@@ -239,15 +244,13 @@ exports.uploadProductPhoto = asyncHandler(async (req, res, next) => {
 // Controller để tạo/cập nhật đánh giá sản phẩm
 exports.createProductReview = async (req, res, next) => {
     try {
-        const { rating, comment, color, size } = req.body;
+        const { rating, comment } = req.body;
 
         const review = {
             user: req.user._id,
             name: req.user.name,
-            rating: Number(rating),
-            comment,
-            color,
-            size,
+            rating: Number.parseInt(rating),
+            comment: comment,
         };
 
         const product = await Product.findById(req.params.id);
@@ -272,7 +275,7 @@ exports.createProductReview = async (req, res, next) => {
             message: 'Đánh giá đã được cập nhật thành công',
         });
     } catch (error) {
-        return next(new ErrorHandler(error.message, 500));
+        return next(new ErrorResponse(error.message, 500));
     }
 };
 
@@ -310,11 +313,16 @@ exports.deleteReview = async (req, res, next) => {
 
         // Cập nhật số lượng review và rating trung bình
         const numOfReviews = reviews.length;
-        const ratings =
+
+        let ratings =
             numOfReviews > 0
                 ? reviews.reduce((acc, item) => item.rating + acc, 0) /
                   numOfReviews
                 : 0;
+
+        if (isNaN(ratings)) {
+            ratings = 0;
+        }
 
         await Product.findByIdAndUpdate(
             req.params.productId,
@@ -330,11 +338,8 @@ exports.deleteReview = async (req, res, next) => {
             }
         );
 
-        res.status(200).json({
-            success: true,
-            message: 'Đánh giá đã được xóa thành công',
-        });
+        res.redirect(`/product/${req.params.productId}`);
     } catch (error) {
-        return next(new ErrorHandler(error.message, 500));
+        return next(new ErrorResponse(error.message, 500));
     }
 };

@@ -18,7 +18,7 @@ router.route('/:id').get(getProduct);
 router
     .route('/:id/review')
     .get(protect, getProductReviews)
-    .delete(protect, deleteReview)
-    .post(protect, createProductReview)
+    .post(protect, createProductReview);
+router.delete('/:productId/review/:reviewId',protect, deleteReview);
 
 module.exports = router;

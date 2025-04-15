@@ -102,29 +102,43 @@
             <div class="card-body">
                 <% if (product.reviews.length === 0) { %>
                 <p class="mb-0">Chưa có đánh giá nào cho sản phẩm này.</p>
-                <% } else { %> <% product.reviews.forEach(review => { %>
+                <% } else { %> 
+                <% product.reviews.forEach(review => { %>
                 <div class="review mb-3 pb-3 border-bottom">
                     <div class="d-flex justify-content-between">
                         <h6 class="mb-1"><%= review.name %></h6>
-                        <small class="text-muted"
-                            ><%= new Date(review.createdAt).toLocaleDateString()
-                            %></small
-                        >
+                        <div>
+                            <small class="text-muted">
+                                <%= new Date(review.createdAt).toLocaleString('vi-VN') %>
+                            </small>
+                            <br>
+                            <% if (currentUser && (currentUser._id.equals(review.user))) { %>
+                            <form action="/product/<%= product._id %>/review/<%= review._id %>?_method=DELETE" method="POST" class="mt-2">
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button type="submit" class="btn btn-sm btn-danger ms-3">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            <% } %>
+                        </div>
                     </div>
                     <div class="mb-2">
-                        <% for (let i = 1; i <= 5; i++) { %> <% if (i <=
-                        review.rating) { %>
-                        <i class="fas fa-star text-warning"></i>
-                        <% } else { %>
-                        <i class="far fa-star text-warning"></i>
-                        <% } %> <% } %>
+                        <% for (let i = 1; i <= 5; i++) { %> 
+                            <% if (i <= review.rating) { %>
+                                <i class="fas fa-star text-warning"></i>
+                            <% } else { %>
+                                <i class="far fa-star text-warning"></i>
+                            <% } %> 
+                        <% } %>
                     </div>
                     <p class="mb-0"><%= review.comment %></p>
                 </div>
-                <% }) %> <% } %>
+                <% }) %> 
+                <% } %>
             </div>
         </div>
-
+    </div>
+</div>
         <!-- Review Form -->
         <% if (currentUser) { %>
         <div class="card">
@@ -239,18 +253,18 @@
             .getElementById('review-form')
             .addEventListener('submit', async function (e) {
                 e.preventDefault();
-                const formData = new FormData(this);
-
-                for (let [key, value] of formData.entries()) {
-                    console.log(key, value);
-                }
+                const formData = {
+                    rating: document.getElementById('rating-value').value,
+                    comment: document.getElementById('comment').value
+                };
 
                 await fetch(`/product/<%= product._id %>/review`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '<%= token %>',
+                        'Content-Type': 'application/json',
                     },
-                    body: formData,
+                    body: JSON.stringify(formData),
                 })
                     .then((response) => response.json())
                     .then((data) => {
@@ -264,12 +278,12 @@
             });
     }
 
-    document.addEventListener('DOMContentLoaded',async function () {
+    document.addEventListener('DOMContentLoaded', async function () {
         // Lấy product ID từ biến EJS
         const productId = '<%= product._id %>';
 
         // Gửi GET request để cập nhật đánh giá
-       await fetch(`/product/${productId}/review`)
+        await fetch(`/product/${productId}/review`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');

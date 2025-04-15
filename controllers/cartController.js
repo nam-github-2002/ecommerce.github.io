@@ -43,7 +43,7 @@ exports.getCart = async (req, res, next) => {
 // Thêm sản phẩm vào giỏ hàng
 exports.addToCart = async (req, res, next) => {
     try {
-        const { productId, quantity } = req.body;
+        const { productId, quantity ,price } = req.body;
         console.log(productId, quantity);
 
         const product = await Product.findById(productId);
@@ -60,7 +60,7 @@ exports.addToCart = async (req, res, next) => {
             cart = await Cart.create({
                 user: req.user.id,
                 cartItems: [
-                    { product: product, quantity, price: product.price },
+                    { product: product, quantity, price},
                 ],
             });
         } else {
@@ -77,7 +77,7 @@ exports.addToCart = async (req, res, next) => {
                 cart.cartItems.push({
                     product: productId,
                     quantity,
-                    price: product.price,
+                    price,
                 });
             }
 
@@ -112,7 +112,7 @@ exports.addToCart = async (req, res, next) => {
 exports.removeFromCart = async (req, res, next) => {
     try {
         const productId = req.params;
-        console.log('productId: ',productId)
+        console.log('productId: ', productId);
         const cart = await Cart.findOne({ user: req.user.id });
         if (!cart) {
             return res.status(404).json({
@@ -239,30 +239,61 @@ exports.getCartCount = async (req, res, next) => {
     }
 };
 
-exports.updateCart = async (req, res, next) => {
+// Cập nhật hàm xử lý trong cartController.js
+exports.updateCart = async (req, res) => {
     try {
-        const { updates } = req.body;
-        const cart = await Cart.findOne({ user: req.user.id });
-        
-        for (const update of updates) {
-            if (update.action === 'remove') {
-                cart.cartItems = cart.cartItems.filter(
-                    item => item.product.toString() !== update.productId
-                );
-            } else {
-                const itemIndex = cart.cartItems.findIndex(
-                    item => item.product.toString() === update.productId
-                );
-                
-                if (itemIndex >= 0) {
-                    cart.cartItems[itemIndex].quantity = update.quantity;
-                }
-            }
+        const { userId, items = [] } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'User ID is required' 
+            });
         }
+
+        // Lọc sản phẩm có quantity > 0
+        const validItems = items.filter(item => item.quantity > 0);
+
+        // Nếu không còn sản phẩm hợp lệ -> xoá cart
+        if (validItems.length === 0) {
+            await Cart.deleteOne({ user: userId });
+            return res.status(200).json({ 
+                success: true,
+                message: 'Cart deleted (empty)' 
+            });
+        }
+
+        // Cập nhật cart
+        let cart = await Cart.findOne({ user: userId });
         
+        if (!cart) {
+            cart = new Cart({ 
+                user: userId,
+                cartItems: validItems.map(item => ({
+                    product: item.productId,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
+            });
+        } else {
+            cart.cartItems = validItems.map(item => ({
+                product: item.productId,
+                quantity: item.quantity,
+                price: item.price
+            }));
+        }
+
         await cart.save();
-        res.json({ success: true });
+
+        res.status(200).json({
+            success: true,
+            data: cart
+        });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error updating cart:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
-}
+};

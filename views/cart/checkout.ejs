@@ -18,6 +18,7 @@
                 <% cartItems.forEach((item, index) => { %>
                 <tr class="cart-item" data-product-id="<%= item.product.id %>">
                     <th scope="row"><%= index + 1 %></th>
+                   
                     <td>
                         <div class="d-flex align-items-center">
                             <img
@@ -36,14 +37,18 @@
                                 <% } %>
                             </div>
                         </div>
+                  
                     </td>
+                   
                     <td class="price">
                         <%= item.product.price.toLocaleString() %>₫
                     </td>
+                    
                     <td>
                         <div class="quantity d-flex align-items-center">
                             <button
                                 class="btn btn-sm btn-outline-secondary minus"
+                                data-price="<%= item.product.price %>"
                                 data-product-id="<%= item.product.id %>">
                                 -
                             </button>
@@ -52,18 +57,22 @@
                                 class="form-control form-control-sm text-center mx-2"
                                 value="<%= item.quantity %>"
                                 min="1"
+                                data-price="<%= item.product.price %>"
                                 data-product-id="<%= item.product.id %>" />
                             <button
                                 class="btn btn-sm btn-outline-secondary plus"
+                                data-price="<%= item.product.price %>"
                                 data-product-id="<%= item.product.id %>">
                                 +
                             </button>
                         </div>
                     </td>
+                   
                     <td class="total-price">
                         <%= (item.product.price *
                         item.quantity).toLocaleString() %>₫
                     </td>
+                   
                     <td>
                         <button
                             class="btn btn-danger btn-sm remove-item"
