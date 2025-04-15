@@ -21,8 +21,8 @@ async function loadContent(url, targetId = 'dynamic-content') {
             document.getElementById(targetId).innerHTML = html;
         }
 
-        // window.location.href = url;
         // Gắn lại sự kiện sau khi load nội dung mới
+        location.href = url;
         checkAuthStatus();
         setupLoginForm();
         setupGlobalEventListeners();
@@ -34,11 +34,28 @@ async function loadContent(url, targetId = 'dynamic-content') {
 //Hàm kiểm tra trạng thái đăng nhập
 async function checkAuthStatus() {
     try {
-        const response = await fetch('/auth/check-status');
+        const response = await fetch('/auth/check', {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        updateHeader(data.user);
+        
+        if (data.isAuthenticated && data.user) {
+            updateHeader(data.user);
+            return data.user;
+        } else {
+            // Xử lý khi không đăng nhập
+            updateHeader(null);
+            return null;
+        }
     } catch (error) {
         console.error('Auth check error:', error);
+        updateHeader(null);
+        return null;
     }
 }
 
@@ -73,16 +90,18 @@ function setupLoginForm() {
                 });
 
                 const data = await response.json();
-
+                
                 if (!data.success) {
                     alert(data.message || 'Đăng nhập thất bại');
                     return;
                 }
 
+               
+                localStorage.setItem('userId', data.currentUser._id);
+
                 const localCart =
                     JSON.parse(localStorage.getItem('cart')) || [];
                 if (localCart.length > 0) mergeCartWithServer();
-
                 updateHeader(data.currentUser);
                 loadContent(data.redirectUrl || '/product');
                 location.reload();
@@ -114,7 +133,7 @@ async function updateHeader(user) {
                     <span class="ms-2">${user.name}</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="/auth/me"><i class="fas fa-user me-2"></i>Hồ sơ</a></li>
+                    <li><a class="dropdown-item" href="/user/me"><i class="fas fa-user me-2"></i>Hồ sơ</a></li>
                     <li><a class="dropdown-item" href="/orders"><i class="fas fa-shopping-bag me-2"></i>Đơn hàng</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
@@ -179,10 +198,10 @@ document.addEventListener('DOMContentLoaded', function () {
     syncCartToServer();
 });
 
-document.addEventListener('click', function (e) {
-    // Xử lý nút thêm vào giỏ hàng
+document.addEventListener('click', (e) => {
     if (e.target.closest('.add-to-cart')) {
         e.preventDefault();
+        console.log('add to cart');
         const productId = e.target.closest('.add-to-cart').dataset.productId;
         const price = e.target.closest('.add-to-cart').dataset.price;
         addToCart(productId, 1, price);
@@ -229,14 +248,28 @@ function setupGlobalEventListeners() {
             e.preventDefault();
             let currentUrl = window.location.href;
             loadContent('/auth/logout');
-            // window.location.href = currentUrl;
-            location.reload();
-        } 
-        
-        else if (target.matches('a[href="/auth/me"]')) {
+            localStorage.removeItem('userId')
+        }
+
+        //7. Thông tin khách hàng
+        else if (target.matches('a[href="/user/me"]')) {
             e.preventDefault();
-            loadContent('/auth/me');
-            location.reload();
+            loadContent('/user/me');
+        }
+
+        //8. Thanh toans
+        else if (target.matches('a[href="/order/checkout"]')) {
+            e.preventDefault();
+            syncCartToServer();
+            loadContent('/order/checkout');
+            location.href = '/order/checkout';
+        } else if (e.target.closest('.add-to-cart')) {
+            e.preventDefault();
+            console.log('add to cart');
+            const productId =
+                e.target.closest('.add-to-cart').dataset.productId;
+            const price = e.target.closest('.add-to-cart').dataset.price;
+            addToCart(productId, 1, price);
         }
     });
 }

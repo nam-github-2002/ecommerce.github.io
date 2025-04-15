@@ -117,3 +117,37 @@ a {
 .remove-item {
     width: 100%;
 }
+
+/* Checkout page styles */
+.card-header {
+    font-weight: 600;
+}
+
+#checkout-form label {
+    font-weight: 500;
+}
+
+.quantity-input {
+    max-width: 70px;
+    text-align: center;
+}
+
+.list-group-item {
+    padding: 1rem 1.25rem;
+}
+
+.order-item img {
+    max-height: 80px;
+    object-fit: contain;
+}
+
+.order-summary {
+    position: sticky;
+    top: 20px;
+}
+
+@media (max-width: 767.98px) {
+    .order-summary {
+        position: static;
+    }
+}

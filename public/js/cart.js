@@ -1,67 +1,66 @@
-// Hàm kiểm tra đăng nhập
+/**
+ * Kiểm tra trạng thái đăng nhập của người dùng
+ * @returns {Promise<boolean>} Trả về true nếu đã đăng nhập, false nếu chưa
+ */
 async function isLoggedIn() {
     try {
         const response = await fetch('/auth/check', {
             method: 'GET',
-            credentials: 'include',
+            credentials: 'include', // Để gửi cookie/session
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
         });
 
-        if (!response.ok) return false;
+        // Kiểm tra HTTP status code
+        if (!response.ok) {
+            console.error('Lỗi từ server:', response.status);
+            return false;
+        }
 
         const data = await response.json();
-        localStorage.setItem('userId', data.user.id);
-        return data.isAuthenticated;
+
+        // Giả sử server trả về { isAuthenticated: boolean }
+        return data.isAuthenticated === true;
     } catch (error) {
-        console.error('Lỗi kiểm tra đăng nhập:', error);
+        console.error('Lỗi khi kiểm tra đăng nhập:', error);
         return false;
     }
 }
-
 // Hàm thêm sản phẩm vào giỏ hàng
 function addToCart(productId, quantity = 1, price) {
-    console.log('add to cart');
     if (!productId) return;
 
-    // Nếu đã đăng nhập, gửi request đến server
-    if (isLoggedIn()) {
-        fetch('/cart/checkout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                productId: productId,
-                quantity: quantity,
-                price: price,
-            }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.success) {
-                    showAlert('success', 'Đã thêm sản phẩm vào giỏ hàng');
-                    updateCartCount(data.cartCount);
-                }
-            })
-            .catch((error) => console.error('Error:', error));
-    } else {
-        // Nếu chưa đăng nhập, lưu vào localStorage
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const existingItem = cart.find((item) => item.productId === productId);
-
-        if (existingItem) {
-            existingItem.quantity += parseInt(quantity);
-        } else {
-            cart.push({
-                productId: productId,
-                quantity: parseInt(quantity),
-                price: price,
-            });
+    // Lấy giỏ hàng từ localStorage và đảm bảo nó luôn là mảng
+    let cart;
+    try {
+        cart = JSON.parse(localStorage.getItem('cart')) || [];
+        // Đảm bảo cart là mảng
+        if (!Array.isArray(cart)) {
+            cart = [];
         }
-
-        localStorage.setItem('cart', JSON.stringify(cart));
-        showAlert('success', 'Đã thêm sản phẩm vào giỏ hàng');
-        updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+    } catch (error) {
+        console.error('Lỗi khi parse giỏ hàng:', error);
+        cart = [];
     }
+
+    // Tìm sản phẩm trong giỏ hàng
+    const existingItem = cart.find((item) => item.productId === productId);
+
+    if (existingItem) {
+        existingItem.quantity += parseInt(quantity);
+    } else {
+        cart.push({
+            productId: productId,
+            quantity: parseInt(quantity),
+            price: price,
+        });
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+    showAlert('success', 'Đã thêm sản phẩm vào giỏ hàng');
+    updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
 }
 
 // Hàm hiển thị thông báo
@@ -247,7 +246,7 @@ function handleQuantityChange(e) {
 async function syncCartToServer() {
     const cart = JSON.parse(localStorage.getItem('cart')) || { items: [] };
 
-    if (isLoggedIn()) {
+    if (checkAuthStatus()) {
         // Lọc bỏ sản phẩm có quantity <= 0 trước khi gửi lên server
         const validItems = cart.items.filter((item) => item.quantity > 0);
 

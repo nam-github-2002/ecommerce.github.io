@@ -19,8 +19,20 @@ exports.protect = async (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        req.user = await User.findOne({ _id: decoded.id });
-        
+        const user = await User.findOne({ _id: decoded.id }).select(
+            '-password'
+        );
+
+        if (!user) {
+            return res.status(401).json({
+                isAuthenticated: false,
+                user: null,
+                message: 'Người dùng không tồn tại',
+            });
+        }
+
+        req.user = user;
+        req.currentUser = user;
         next();
     } catch (err) {
         return res.status(401).json({

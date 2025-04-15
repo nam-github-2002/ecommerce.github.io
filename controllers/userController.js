@@ -6,9 +6,8 @@ const ErrorResponse = require('../utils/errorResponse');
 // @route   GET /api/v1/user/me
 // @access  Private
 exports.getUserProfile = asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.user._id).select('-password');
-
-    res.status(200).render('/users/profile',{
+    const user = await User.findById(req.user.id);
+    res.status(200).render('users/profile',{
         success: true,
         title: 'Thông tin khách hàng',
         user: user,

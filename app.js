@@ -73,6 +73,9 @@ app.use('/cart', require('./routes/cartRoutes'));
 //User
 app.use('/user', require('./routes/userRoutes'));
 
+//Order
+app.use('/order', require('./routes/orderRoutes'));
+
 // Khởi động server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

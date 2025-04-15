@@ -62,7 +62,7 @@ exports.registerUser = async (req, res, next) => {
         // Thiết lập cookie
         res.cookie('jwt', token, {
             expires: new Date(
-                Date.now() + process.env.COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+                Date.now() + process.env.COOKIE_EXPIRE * 60 * 60 * 1000
             ),
             httpOnly: true,
         });
