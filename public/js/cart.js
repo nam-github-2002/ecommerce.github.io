@@ -1,7 +1,3 @@
-/**
- * Kiểm tra trạng thái đăng nhập của người dùng
- * @returns {Promise<boolean>} Trả về true nếu đã đăng nhập, false nếu chưa
- */
 async function isLoggedIn() {
     try {
         const response = await fetch('/auth/check', {
@@ -28,41 +24,49 @@ async function isLoggedIn() {
         return false;
     }
 }
+
 // Hàm thêm sản phẩm vào giỏ hàng
 function addToCart(productId, quantity = 1, price) {
     if (!productId) return;
 
-    // Lấy giỏ hàng với cấu trúc thống nhất { items: [] }
+    // Lấy giỏ hàng với kiểm tra lỗi và cấu trúc thống nhất
     let cart;
     try {
         cart = JSON.parse(localStorage.getItem('cart')) || { items: [] };
-        if (!Array.isArray(cart.items)) cart.items = [];
+        if (!Array.isArray(cart.items)) cart.items = []; // Đảm bảo items luôn là array
     } catch (error) {
         cart = { items: [] };
     }
 
-    // Tìm và cập nhật sản phẩm
+    // Kiểm tra và chuyển đổi kiểu dữ liệu
+    quantity = parseInt(quantity) || 1;
+    price = parseFloat(price) || 0;
+
     const existingItem = cart.items.find(
         (item) => item.productId === productId
     );
 
     if (existingItem) {
-        existingItem.quantity += parseInt(quantity);
+        existingItem.quantity += quantity;
     } else {
         cart.items.push({
             productId: productId,
-            quantity: parseInt(quantity),
+            quantity: quantity,
             price: price,
+            addedAt: new Date().toISOString(), // Thêm timestamp để sắp xếp
         });
     }
 
-    // Lưu lại và cập nhật UI
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartUI();
     updateOrderSummary();
     showAlert('success', 'Đã thêm sản phẩm vào giỏ hàng');
-}
 
+    // Đồng bộ ngay lên server nếu đã đăng nhập
+    if (checkAuthStatus()) {
+        syncCartToServer();
+    }
+}
 // Hàm hiển thị thông báo
 function showAlert(type, message) {
     const alertDiv = document.createElement('div');
@@ -89,20 +93,30 @@ function showAlert(type, message) {
 function mergeCartWithServer() {
     const localCart = JSON.parse(localStorage.getItem('cart')) || { items: [] };
 
-    if (localCart.length > 0) {
+    if (localCart.items.length > 0) {
         fetch('/cart/merge', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ items: localCart }),
+            body: JSON.stringify({ items: localCart.items }),
         })
-            .then((response) => response.json())
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then((data) => {
                 if (data.success) {
                     localStorage.removeItem('cart');
                     updateCartCount(data.count);
+                    showAlert('success', 'Đã đồng bộ giỏ hàng với tài khoản');
                 }
+            })
+            .catch((error) => {
+                console.error('Merge cart failed:', error);
+                showAlert('danger', 'Đồng bộ giỏ hàng thất bại');
             });
     }
 }
@@ -169,7 +183,7 @@ function updateOrderSummary() {
     try {
         cart = JSON.parse(localStorage.getItem('cart')) || { items: [] };
     } catch (e) {
-        cart = {items: []};
+        cart = { items: [] };
     }
 
     // Tính toán tổng tiền
@@ -229,12 +243,12 @@ function updateCartUI() {
         cartItemsContainer.innerHTML = cart.items
             .map(
                 (item) => `
-            <div class="cart-item">
-                <p>${item.productId}</p>
-                <p>Số lượng: ${item.quantity}</p>
-                <p>Giá: ${formatVND(item.price)}</p>
-            </div>
-        `
+                    <div class="cart-item">
+                        <p>${item.productId}</p>
+                        <p>Số lượng: ${item.quantity}</p>
+                        <p>Giá: ${formatVND(item.price)}</p>
+                    </div>
+                `
             )
             .join('');
     }
@@ -318,10 +332,6 @@ async function syncCartToServer() {
         console.error('Error parsing cart data:', e);
         cart = { items: [] };
     }
-    
-    console.log('Client cart before stringify:', cart);
-    console.log('Client cart after stringify:', JSON.stringify(cart.items));
-
 
     if (checkAuthStatus()) {
         const validItems = cart.items.filter((item) => item.quantity > 0);
@@ -361,7 +371,3 @@ async function syncCartToServer() {
     }
     return false;
 }
-
-// Khởi tạo khi tải trang
-document.addEventListener('click', handleCartEvents);
-document.addEventListener('change', handleQuantityChange);

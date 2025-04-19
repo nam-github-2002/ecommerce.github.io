@@ -52,9 +52,14 @@ async function loadContent(url, targetId = 'dynamic-content') {
             targetElement.innerHTML = html;
         }
 
-        // Reinitialize components
-        syncCartToServer()
-        setupLoginForm();
+        if (checkAuthStatus()) {
+            console.log('da dang nhap');
+            mergeCartWithServer();
+        } else {
+            console.log('chua dang nhap');
+            setupLoginForm();
+        }
+
         setupGlobalEventListeners();
     } catch (error) {
         console.error('Failed to load content:', error);
@@ -72,6 +77,18 @@ async function loadContent(url, targetId = 'dynamic-content') {
             </div>
         `;
     }
+}
+
+// Hàm getCookie giống với localStorage.getItem
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [cookieName, cookieValue] = cookie.trim().split('=');
+        if (cookieName === name) {
+            return decodeURIComponent(cookieValue);
+        }
+    }
+    return null; // Trả về null nếu không tìm thấy, giống localStorage
 }
 
 //Hàm kiểm tra trạng thái đăng nhập
@@ -140,10 +157,14 @@ function setupLoginForm() {
                 }
 
                 localStorage.setItem('userId', data.currentUser._id);
+                localStorage.setItem('jwt', data.token);
 
-                const localCart =
-                    JSON.parse(localStorage.getItem('cart')) || [];
-                if (localCart.length > 0) mergeCartWithServer();
+                const localCart = JSON.parse(localStorage.getItem('cart')) || {
+                    items: [],
+                };
+
+                if (localCart.items.length > 0) mergeCartWithServer();
+
                 updateHeader(data.currentUser);
                 loadContent(data.redirectUrl || '/product');
                 location.reload();
@@ -235,19 +256,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setupGlobalEventListeners(); // Sự kiện delegation
     checkAuthStatus(); // Kiểm tra đăng nhập
     setupLoginForm(); // Form đăng nhập
-    syncCartToServer();
     updateCartUI();
     updateOrderSummary();
-});
-
-document.addEventListener('click', (e) => {
-    if (e.target.closest('.add-to-cart')) {
-        e.preventDefault();
-        console.log('add to cart');
-        const productId = e.target.closest('.add-to-cart').dataset.productId;
-        const price = e.target.closest('.add-to-cart').dataset.price;
-        addToCart(productId, 1, price);
-    }
+    mergeCartWithServer();
 });
 
 function setupGlobalEventListeners() {
@@ -289,9 +300,10 @@ function setupGlobalEventListeners() {
         else if (target.matches('a[href="/auth/logout"]')) {
             e.preventDefault();
             localStorage.removeItem('userId');
+            localStorage.removeItem('jwt');
             let currentUrl = window.location.href;
             loadContent('/auth/logout');
-            location.href = currentUrl
+            location.href = currentUrl;
         }
 
         //7. Thông tin khách hàng
@@ -303,10 +315,13 @@ function setupGlobalEventListeners() {
         //8. Thanh toans
         else if (target.matches('a[href="/order/checkout"]')) {
             e.preventDefault();
-            syncCartToServer();
+            mergeCartWithServer();
             loadContent('/order/checkout');
             location.href = '/order/checkout';
-        } else if (e.target.closest('.add-to-cart')) {
+        }
+
+        //add to cart
+        else if (e.target.closest('.add-to-cart')) {
             e.preventDefault();
             console.log('add to cart');
             const productId =
@@ -314,5 +329,8 @@ function setupGlobalEventListeners() {
             const price = e.target.closest('.add-to-cart').dataset.price;
             addToCart(productId, 1, price);
         }
+
+        document.addEventListener('click', handleCartEvents);
+        document.addEventListener('change', handleQuantityChange);
     });
 }

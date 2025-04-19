@@ -159,11 +159,15 @@ exports.clearCart = async (req, res, next) => {
 exports.mergeCart = async (req, res, next) => {
     try {
         const { items } = req.body;
-        let cart = await Cart.findOne({ user: req.user.id });
+        if (!Array.isArray(items)) {
+            return res.status(400).json({ success: false, message: 'Items should be an array' });
+        }
 
+        let cart = await Cart.findOne({ user: req.user.id });
+        
         if (!cart) {
-            // Nếu chưa có giỏ hàng, tạo mới
-            const cartItems = items.map((item) => ({
+            // Tạo mới giỏ hàng
+            const cartItems = items.map(item => ({
                 product: item.productId,
                 quantity: item.quantity || 1,
                 price: item.price,
@@ -173,32 +177,30 @@ exports.mergeCart = async (req, res, next) => {
                 user: req.user.id,
                 cartItems,
             });
-            await cart.save();
         } else {
-            // Nếu đã có giỏ hàng, merge với local
+            // Merge giỏ hàng
             for (const item of items) {
                 const existingItem = cart.cartItems.find(
-                    (ci) => ci.product.toString() === item.productId
+                    ci => ci.product.toString() === item.productId
                 );
 
                 if (existingItem) {
-                    existingItem.quantity += item.quantity;
+                    existingItem.quantity += item.quantity || 1;
                 } else {
                     const product = await Product.findById(item.productId);
                     if (product) {
                         cart.cartItems.push({
                             product: item.productId,
-                            quantity: item.quantity,
+                            quantity: item.quantity || 1,
                             price: product.price,
                         });
                     }
                 }
             }
-
-            await cart.save();
         }
 
-        // Lấy số lượng sản phẩm trong giỏ hàng
+        await cart.save();
+
         const cartCount = cart.cartItems.reduce(
             (total, item) => total + item.quantity,
             0
@@ -206,7 +208,6 @@ exports.mergeCart = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            cart,
             count: cartCount,
         });
     } catch (err) {
