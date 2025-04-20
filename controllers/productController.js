@@ -105,7 +105,7 @@ exports.getProduct = async (req, res, next) => {
             title: product.name,
             product,
             token,
-            currentUser: req.user || null,
+            user: req.user || null,
             redirectUrl: req.originalUrl,
         });
     } catch (error) {
@@ -115,7 +115,7 @@ exports.getProduct = async (req, res, next) => {
 
 exports.createProduct = asyncHandler(async (req, res, next) => {
     // Add user to req.body
-    req.body.user = req.user.id;
+    req.body.user = req.user._id;
 
     const product = await Product.create(req.body);
 
@@ -138,10 +138,10 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
     }
 
     // Make sure user is product owner or admin
-    if (product.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (product.user.toString() !== req.user._id && req.user.role !== 'admin') {
         return next(
             new ErrorResponse(
-                `User ${req.user.id} không có quyền cập nhật sản phẩm này`,
+                `User ${req.user._id} không có quyền cập nhật sản phẩm này`,
                 401
             )
         );
@@ -171,10 +171,10 @@ exports.deleteProduct = asyncHandler(async (req, res, next) => {
     }
 
     // Make sure user is product owner or admin
-    if (product.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (product.user.toString() !== req.user._id && req.user.role !== 'admin') {
         return next(
             new ErrorResponse(
-                `User ${req.user.id} không có quyền xóa sản phẩm này`,
+                `User ${req.user._id} không có quyền xóa sản phẩm này`,
                 401
             )
         );

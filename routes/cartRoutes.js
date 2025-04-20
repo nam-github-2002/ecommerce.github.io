@@ -18,7 +18,7 @@ router
     .post(protect, addToCart)
     .delete(protect, clearCart);
 router.route('/merge').post(protect,mergeCart)
-router.route('/:productId').delete(protect, removeFromCart);
+router.route('/deleteItem/:productId').post(protect, removeFromCart);
 router.route('/cart-count').get(protect, getCartCount);
 router.post('/update', protect, updateCart)
 module.exports = router;

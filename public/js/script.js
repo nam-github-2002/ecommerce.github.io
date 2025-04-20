@@ -1,3 +1,5 @@
+checkAuthStatus();
+
 async function loadContent(url, targetId = 'dynamic-content') {
     try {
         // Show loading state
@@ -52,15 +54,9 @@ async function loadContent(url, targetId = 'dynamic-content') {
             targetElement.innerHTML = html;
         }
 
-        if (checkAuthStatus()) {
-            console.log('da dang nhap');
-            mergeCartWithServer();
-        } else {
-            console.log('chua dang nhap');
-            setupLoginForm();
-        }
-
         setupGlobalEventListeners();
+        mergeCartWithServer();
+        setupLoginForm();
     } catch (error) {
         console.error('Failed to load content:', error);
 
@@ -94,7 +90,7 @@ function getCookie(name) {
 //Hàm kiểm tra trạng thái đăng nhập
 async function checkAuthStatus() {
     try {
-        const response = await fetch('/auth/check', {
+        const response = await fetch('/auth/check-status', {
             credentials: 'include',
         });
 
@@ -141,6 +137,7 @@ function setupLoginForm() {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({
                         email,
                         password,
@@ -156,8 +153,7 @@ function setupLoginForm() {
                     return;
                 }
 
-                localStorage.setItem('userId', data.currentUser._id);
-                localStorage.setItem('jwt', data.token);
+                localStorage.setItem('userId', data.user._id);
 
                 const localCart = JSON.parse(localStorage.getItem('cart')) || {
                     items: [],
@@ -165,7 +161,7 @@ function setupLoginForm() {
 
                 if (localCart.items.length > 0) mergeCartWithServer();
 
-                updateHeader(data.currentUser);
+                updateHeader(data.user);
                 loadContent(data.redirectUrl || '/product');
                 location.reload();
             } catch (error) {
@@ -218,6 +214,7 @@ async function updateHeader(user) {
             console.error('Lỗi khi lấy số lượng giỏ hàng:', error);
         }
     } else {
+        console.log('khong co user');
         authSection.innerHTML = `
             <a href="/auth/login" class="text-white me-3"><i class="fas fa-sign-in-alt"></i> Đăng nhập</a>
             <a href="/auth/register" class="text-white"><i class="fas fa-user-plus"></i> Đăng ký</a>
@@ -225,7 +222,7 @@ async function updateHeader(user) {
 
         // Hiển thị số lượng giỏ hàng từ localStorage nếu chưa đăng nhập
         const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const count = cart.reduce(
+        const count = cart.items.reduce(
             (total, item) => total + (item.quantity || 1),
             0
         );
@@ -262,75 +259,91 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function setupGlobalEventListeners() {
-    // 1. Xử lý tất cả click events bằng delegation
+    // Sử dụng event delegation trên document để bắt tất cả click events
     document.addEventListener('click', function (e) {
-        const target = e.target.closest('a'); // Kiểm tra thẻ <a> được click
+        const target = e.target.closest('a'); // Tìm thẻ a gần nhất được click
 
-        if (!target) return; // Nếu không phải thẻ <a> thì bỏ qua
+        // Nếu không phải thẻ a hoặc là thẻ a không cần xử lý đặc biệt thì bỏ qua
+        if (!target) return;
 
-        // 2. Xử lý nút Đăng nhập
-        if (target.matches('a[href="/auth/login"]')) {
+        // Kiểm tra các URL cần xử lý đặc biệt
+        const href = target.getAttribute('href');
+
+        // 1. Đăng nhập
+        if (href === '/auth/login') {
             e.preventDefault();
             const currentUrl =
                 window.location.pathname + window.location.search;
             loadContent(
                 `/auth/login?redirect=${encodeURIComponent(currentUrl)}`
             );
+            return;
         }
 
-        // 3. Xử lý nút Đăng ký
-        else if (target.matches('a[href="/auth/register"]')) {
+        // 2. Đăng ký
+        else if (href === '/auth/register') {
             e.preventDefault();
             loadContent('/auth/register');
+            return;
         }
 
-        // 4. Xử lý nút Sản phẩm
-        else if (target.matches('a[href="/products"]')) {
+        // 3. Sản phẩm
+        else if (href === '/products') {
             e.preventDefault();
             loadContent('/products/list');
+            return;
         }
 
-        // 5. Xử lý nút Giỏ hàng
-        else if (target.matches('a[href="/cart/checkout"]')) {
+        // 4. Giỏ hàng
+        else if (href === '/cart/checkout') {
             e.preventDefault();
+            updateCartUI()
+            updateOrderSummary()
             loadContent('/cart/checkout');
+            return;
         }
 
-        //6. Đăng xuất
-        else if (target.matches('a[href="/auth/logout"]')) {
+        // 5. Đăng xuất
+        else if (href === '/auth/logout') {
             e.preventDefault();
             localStorage.removeItem('userId');
-            localStorage.removeItem('jwt');
-            let currentUrl = window.location.href;
+            localStorage.removeItem('token');
+            localStorage.removeItem('cart');
             loadContent('/auth/logout');
-            location.href = currentUrl;
+            window.location.reload(); // Sửa từ this.location.reload()
+            return;
         }
 
-        //7. Thông tin khách hàng
-        else if (target.matches('a[href="/user/me"]')) {
+        // 6. Thông tin khách hàng
+        else if (href === '/user/me') {
             e.preventDefault();
             loadContent('/user/me');
+            return;
         }
 
-        //8. Thanh toans
-        else if (target.matches('a[href="/order/checkout"]')) {
+        // 7. Thanh toán
+        else if (href === '/order/checkout') {
             e.preventDefault();
             mergeCartWithServer();
             loadContent('/order/checkout');
-            location.href = '/order/checkout';
+            return;
         }
 
-        //add to cart
-        else if (e.target.closest('.add-to-cart')) {
+        // Các thẻ a khác không bị ảnh hưởng, sẽ hoạt động bình thường
+    });
+
+    // Xử lý sự kiện cho nút thêm vào giỏ hàng
+    document.addEventListener('click', function (e) {
+        const addToCartBtn = e.target.closest('.add-to-cart');
+        if (addToCartBtn) {
             e.preventDefault();
-            console.log('add to cart');
-            const productId =
-                e.target.closest('.add-to-cart').dataset.productId;
-            const price = e.target.closest('.add-to-cart').dataset.price;
+            const productId = addToCartBtn.dataset.productId;
+            const price = addToCartBtn.dataset.price;
             addToCart(productId, 1, price);
         }
-
-        document.addEventListener('click', handleCartEvents);
-        document.addEventListener('change', handleQuantityChange);
     });
+
+    // Các event listeners khác
+    document.addEventListener('click', handleCartEvents);
+    document.addEventListener('change', handleQuantityChange);
 }

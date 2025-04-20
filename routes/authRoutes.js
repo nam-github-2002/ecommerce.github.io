@@ -14,19 +14,13 @@ router.get('/register', showRegisterForm);
 router.get('/login', showLoginForm);
 router.get('/check-status', protect, (req, res) => {
     res.json({
-        isAuthenticated: req.isAuthenticated(),
-        currentUser: req.currentUser || null,
+        isAuthenticated: true,
+        user: req.user
     });
 });
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 router.get('/me', protect, getUserProfile);
-router.get('/check', protect, (req, res) => {
-    res.status(200).json({
-        isAuthenticated: true,
-        user: req.user || req.currentUser || null,
-    });
-});
 
 module.exports = router;

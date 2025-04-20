@@ -112,7 +112,7 @@
                                 <%= new Date(review.createdAt).toLocaleString('vi-VN') %>
                             </small>
                             <br>
-                            <% if (currentUser && (currentUser._id.equals(review.user))) { %>
+                            <% if (user && (user._id.equals(review.user))) { %>
                             <form action="/product/<%= product._id %>/review/<%= review._id %>?_method=DELETE" method="POST" class="mt-2">
                                 <input type="hidden" name="_method" value="DELETE">
                                 <button type="submit" class="btn btn-sm btn-danger ms-3">
@@ -140,7 +140,7 @@
     </div>
 </div>
         <!-- Review Form -->
-        <% if (currentUser) { %>
+        <% if (user) { %>
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Viết đánh giá</h5>

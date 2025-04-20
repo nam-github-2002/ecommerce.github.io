@@ -16,7 +16,7 @@
         <link rel="stylesheet" href="/css/style.css" />
     </head>
     <body>
-        <%- include('partials/header') %>
+        <%- include('partials/header', {user: user}) %>
 
         <main id="dynamic-content" class="container mt-4"><%- body %></main>
 

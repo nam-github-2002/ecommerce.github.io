@@ -50,14 +50,14 @@ exports.registerUser = async (req, res, next) => {
         }
 
         // Tạo người dùng mới
-        const currentUser = await User.create({
+        const user = await User.create({
             name,
             email,
             password,
         });
 
         // Tạo token
-        const token = currentUser.getJwtToken();
+        const token = user.getJwtToken();
 
         // Thiết lập cookie
         res.cookie('jwt', token, {
@@ -70,7 +70,7 @@ exports.registerUser = async (req, res, next) => {
         res.status(201).json({
             success: true,
             token,
-            currentUser,
+            user,
             redirectUrl: '/auth/login',
         });
     } catch (err) {
@@ -130,8 +130,7 @@ exports.loginUser = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            token,
-            currentUser: user,
+            user: user,
             redirectUrl: req.body.redirectUrl || '/product',
         });
     } catch (err) {
@@ -152,18 +151,18 @@ exports.logoutUser = (req, res, next) => {
     res.status(200).json({
         success: true,
         message: 'Đã đăng xuất',
-        redirectUrl: '/product',
+        redirectUrl: req.path || '/product',
     });
 };
 
 // Lấy thông tin người dùng hiện tại
 exports.getUserProfile = async (req, res, next) => {
     try {
-        const currentUser = await User.findById(req.currentUser.id);
+        const user = await User.findById(req.user._id);
 
         res.status(200).json({
             success: true,
-            currentUser,
+            user,
         });
     } catch (err) {
         res.status(500).json({

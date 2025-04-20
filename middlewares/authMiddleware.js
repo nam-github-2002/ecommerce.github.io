@@ -1,43 +1,57 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Bảo vệ route với JWT
 exports.protect = async (req, res, next) => {
     let token;
 
-    if (req.cookies.jwt) {
+    // 1. Kiểm tra token từ cả Header và Cookie
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer')
+    ) {
+        token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.jwt) {
         token = req.cookies.jwt;
     }
-
+ 
+    // 2. Không có token
     if (!token) {
         return res.status(401).json({
-            success: false,
+            isAuthenticated: false,
             message: 'Vui lòng đăng nhập để truy cập',
         });
     }
 
     try {
+        // 3. Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        const user = await User.findOne({ _id: decoded.id }).select(
-            '-password'
-        );
+        // 4. Kiểm tra user tồn tại
+        const user = await User.findById(decoded.id)
+            .select('-password -__v')
+            .lean();
 
         if (!user) {
             return res.status(401).json({
                 isAuthenticated: false,
-                user: null,
                 message: 'Người dùng không tồn tại',
             });
         }
-
+        // 5. Gán user vào request
         req.user = user;
-        req.currentUser = user;
         next();
     } catch (err) {
+        // 6. Xử lý lỗi cụ thể
+        let message = 'Không có quyền truy cập';
+        if (err.name === 'TokenExpiredError') {
+            message = 'Token đã hết hạn';
+        } else if (err.name === 'JsonWebTokenError') {
+            message = 'Token không hợp lệ';
+        }
+
         return res.status(401).json({
-            success: false,
-            message: 'Không có quyền truy cập',
+            isAuthenticated: false,
+            message,
         });
     }
 };
@@ -48,7 +62,7 @@ exports.authorize = (...roles) => {
         if (!roles.includes(req.user.role)) {
             return res.status(403).json({
                 success: false,
-                message: `Người dùng với vai trò ${req.user.role} không có quyền truy cập`,
+                message: `Vai trò ${req.user.role} không được phép truy cập`,
             });
         }
         next();

@@ -6,8 +6,8 @@ const ErrorResponse = require('../utils/errorResponse');
 // @route   GET /api/v1/user/me
 // @access  Private
 exports.getUserProfile = asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.user.id);
-    res.status(200).render('users/profile',{
+    const user = await User.findById(req.user._id);
+    res.status(200).render('users/profile', {
         success: true,
         title: 'Thông tin khách hàng',
         user: user,
@@ -23,7 +23,7 @@ exports.updateUserDetails = asyncHandler(async (req, res, next) => {
         email: req.body.email,
     };
 
-    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+    const user = await User.findByIdAndUpdate(req.user._id, fieldsToUpdate, {
         new: true,
         runValidators: true,
     }).select('-password');
@@ -38,7 +38,7 @@ exports.updateUserDetails = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/v1/user/updatepassword
 // @access  Private
 exports.updatePassword = asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await User.findById(req.user._id).select('+password');
 
     // Check current password
     if (!(await user.comparePassword(req.body.currentPassword))) {
@@ -77,7 +77,7 @@ exports.uploadAvatar = asyncHandler(async (req, res, next) => {
     }
 
     // Create custom filename
-    file.name = `avatar_${req.user.id}${path.parse(file.name).ext}`;
+    file.name = `avatar_${req.user._id}${path.parse(file.name).ext}`;
 
     file.mv(`${process.env.FILE_UPLOAD_PATH}/${file.name}`, async (err) => {
         if (err) {
@@ -87,7 +87,7 @@ exports.uploadAvatar = asyncHandler(async (req, res, next) => {
             );
         }
 
-        await User.findByIdAndUpdate(req.user.id, { avatar: file.name });
+        await User.findByIdAndUpdate(req.user._id, { avatar: file.name });
 
         res.status(200).json({
             success: true,

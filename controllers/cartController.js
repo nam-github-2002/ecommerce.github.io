@@ -6,7 +6,7 @@ const { ObjectId } = mongoose.Types;
 // Lấy giỏ hàng
 exports.getCart = async (req, res, next) => {
     try {
-        const cart = await Cart.findOne({ user: req.user.id }).populate({
+        const cart = await Cart.findOne({ user: req.user._id }).populate({
             path: 'cartItems.product',
             select: 'name price images category',
         });
@@ -54,11 +54,11 @@ exports.addToCart = async (req, res, next) => {
             });
         }
 
-        let cart = await Cart.findOne({ user: req.user.id });
+        let cart = await Cart.findOne({ user: req.user._id });
 
         if (!cart) {
             cart = await Cart.create({
-                user: req.user.id,
+                user: req.user._id,
                 cartItems: [{ product: product, quantity, price }],
             });
         } else {
@@ -83,10 +83,12 @@ exports.addToCart = async (req, res, next) => {
         }
 
         // Lấy lại giỏ hàng với thông tin sản phẩm đầy đủ
-        const updatedCart = await Cart.findOne({ user: req.user.id }).populate({
-            path: 'cartItems.product',
-            select: 'name price images',
-        });
+        const updatedCart = await Cart.findOne({ user: req.user._id }).populate(
+            {
+                path: 'cartItems.product',
+                select: 'name price images',
+            }
+        );
 
         const cartCount = updatedCart.cartItems.reduce(
             (total, item) => total + item.quantity,
@@ -109,9 +111,9 @@ exports.addToCart = async (req, res, next) => {
 // Xóa sản phẩm khỏi giỏ hàng
 exports.removeFromCart = async (req, res, next) => {
     try {
-        const productId = req.params;
+        const { productId } = req.params;
         console.log('productId: ', productId);
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({
                 success: false,
@@ -128,7 +130,7 @@ exports.removeFromCart = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            cart,
+            cart: { items: cart.cartItems || [] },
         });
     } catch (err) {
         res.status(500).json({
@@ -141,7 +143,7 @@ exports.removeFromCart = async (req, res, next) => {
 // Xóa toàn bộ giỏ hàng
 exports.clearCart = async (req, res, next) => {
     try {
-        await Cart.findOneAndDelete({ user: req.user.id });
+        await Cart.findOneAndDelete({ user: req.user._id });
 
         res.status(200).json({
             success: true,
@@ -158,39 +160,48 @@ exports.clearCart = async (req, res, next) => {
 // Merge giỏ hàng local với server
 exports.mergeCart = async (req, res, next) => {
     try {
-        const { items } = req.body;
-        if (!Array.isArray(items)) {
-            return res.status(400).json({ success: false, message: 'Items should be an array' });
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required',
+            });
         }
 
-        let cart = await Cart.findOne({ user: req.user.id });
-        
-        if (!cart) {
+        const { items } = req.body;
+
+        if (!Array.isArray(items)) {
+            return res
+                .status(400)
+                .json({ success: false, message: 'Items should be an array' });
+        }
+        let cart = await Cart.findOne({ user: req.user._id });
+
+        if (!cart || cart.cartItems.length === 0) {
             // Tạo mới giỏ hàng
-            const cartItems = items.map(item => ({
-                product: item.productId,
+            const cartItems = items.map((item) => ({
+                product: item.product,
                 quantity: item.quantity || 1,
                 price: item.price,
             }));
 
             cart = new Cart({
-                user: req.user.id,
+                user: req.user._id,
                 cartItems,
             });
         } else {
             // Merge giỏ hàng
             for (const item of items) {
                 const existingItem = cart.cartItems.find(
-                    ci => ci.product.toString() === item.productId
+                    (ci) => ci.product.toString() === item.product
                 );
 
                 if (existingItem) {
-                    existingItem.quantity += item.quantity || 1;
+                    existingItem.quantity = item.quantity || 1;
                 } else {
-                    const product = await Product.findById(item.productId);
+                    const product = await Product.findById(item.product);
                     if (product) {
                         cart.cartItems.push({
-                            product: item.productId,
+                            product: item.product,
                             quantity: item.quantity || 1,
                             price: product.price,
                         });
@@ -200,15 +211,16 @@ exports.mergeCart = async (req, res, next) => {
         }
 
         await cart.save();
+        console.log(cart);
 
         const cartCount = cart.cartItems.reduce(
             (total, item) => total + item.quantity,
             0
         );
-
         res.status(200).json({
             success: true,
             count: cartCount,
+            cart,
         });
     } catch (err) {
         res.status(500).json({
@@ -221,7 +233,7 @@ exports.mergeCart = async (req, res, next) => {
 // Lấy số lượng sản phẩm trong giỏ hàng
 exports.getCartCount = async (req, res, next) => {
     try {
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
         const count = cart
             ? cart.cartItems.reduce((total, item) => total + item.quantity, 0)
             : 0;

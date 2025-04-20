@@ -42,7 +42,7 @@
                 </li>
             </ul>
             <ul class="navbar-nav">
-                <% if (!currentUser) { %>
+                <% if (!user) { %>
                 <li class="nav-item">
                     <a class="nav-link" href="/login">Đăng nhập</a>
                 </li>
@@ -58,11 +58,11 @@
                         role="button"
                         data-bs-toggle="dropdown">
                         <img
-                            src="<%= currentUser.avatar %>"
+                            src="<%= user.avatar %>"
                             alt="Avatar"
                             class="rounded-circle"
                             width="30" />
-                        <span class="ms-2"><%= currentUser.name %></span>
+                        <span class="ms-2"><%= user.name %></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>

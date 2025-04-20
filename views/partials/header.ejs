@@ -14,7 +14,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 text-end">
-                    <% if (!currentUser) { %>
+                    <% if (!user) { %>
                     <a href="/auth/login" class="text-white me-3"
                         ><i class="fas fa-sign-in-alt"></i> Đăng nhập</a
                     >
@@ -29,11 +29,11 @@
                             id="userDropdown"
                             data-bs-toggle="dropdown">
                             <img
-                                src="<%= currentUser.avatar.url %>"
+                                src="<%= user.avatar.url %>"
                                 alt="Avatar"
                                 class="rounded-circle"
                                 width="30" />
-                            <span class="ms-2"><%= currentUser.name %></span>
+                            <span class="ms-2"><%= user.name %></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
