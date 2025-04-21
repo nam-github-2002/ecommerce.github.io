@@ -151,3 +151,23 @@ a {
         position: static;
     }
 }
+
+.spinner-border {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.was-validated .form-control:invalid,
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    display: none;
+    color: #dc3545;
+    font-size: 0.875em;
+}
+
+.was-validated .form-control:invalid ~ .invalid-feedback {
+    display: block;
+}

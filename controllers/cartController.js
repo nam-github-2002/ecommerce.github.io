@@ -211,7 +211,6 @@ exports.mergeCart = async (req, res, next) => {
         }
 
         await cart.save();
-        console.log(cart);
 
         const cartCount = cart.cartItems.reduce(
             (total, item) => total + item.quantity,

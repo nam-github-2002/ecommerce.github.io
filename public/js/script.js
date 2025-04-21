@@ -1,4 +1,9 @@
-checkAuthStatus();
+setupGlobalEventListeners(); // Sự kiện delegation
+checkAuthStatus(); // Kiểm tra đăng nhập
+setupLoginForm(); // Form đăng nhập
+updateCartUI();
+updateOrderSummary();
+mergeCartWithServer();
 
 async function loadContent(url, targetId = 'dynamic-content') {
     try {
@@ -172,14 +177,6 @@ function setupLoginForm() {
     }
 }
 
-// Hàm cập nhật số lượng trên icon giỏ hàng
-function updateCartCount(count) {
-    const cartCountElement = document.getElementById('cart-count');
-    if (cartCountElement) {
-        cartCountElement.textContent = count;
-    }
-}
-
 // Hàm cập nhật header
 async function updateHeader(user) {
     const authSection = document.querySelector('.col-md-6.text-end');
@@ -249,18 +246,10 @@ document.addEventListener('submit', function (e) {
     }
 });
 
-document.addEventListener('DOMContentLoaded', function () {
-    setupGlobalEventListeners(); // Sự kiện delegation
-    checkAuthStatus(); // Kiểm tra đăng nhập
-    setupLoginForm(); // Form đăng nhập
-    updateCartUI();
-    updateOrderSummary();
-    mergeCartWithServer();
-});
-
 function setupGlobalEventListeners() {
     // Sử dụng event delegation trên document để bắt tất cả click events
     document.addEventListener('click', function (e) {
+        let isCheckoutInitializing = false;
         const target = e.target.closest('a'); // Tìm thẻ a gần nhất được click
 
         // Nếu không phải thẻ a hoặc là thẻ a không cần xử lý đặc biệt thì bỏ qua
@@ -297,8 +286,8 @@ function setupGlobalEventListeners() {
         // 4. Giỏ hàng
         else if (href === '/cart/checkout') {
             e.preventDefault();
-            updateCartUI()
-            updateOrderSummary()
+            updateCartUI();
+            updateOrderSummary();
             loadContent('/cart/checkout');
             return;
         }
@@ -324,15 +313,21 @@ function setupGlobalEventListeners() {
         // 7. Thanh toán
         else if (href === '/order/checkout') {
             e.preventDefault();
+    
+            if (isCheckoutInitializing) return;
+            isCheckoutInitializing = true;
+            
             mergeCartWithServer();
             loadContent('/order/checkout');
+            setTimeout(() => {
+                console.log('init checkout form in settimeout');
+                initCheckoutForm();
+                isCheckoutInitializing = false;
+            }, 500);
             return;
         }
-
-        // Các thẻ a khác không bị ảnh hưởng, sẽ hoạt động bình thường
     });
 
-    // Xử lý sự kiện cho nút thêm vào giỏ hàng
     document.addEventListener('click', function (e) {
         const addToCartBtn = e.target.closest('.add-to-cart');
         if (addToCartBtn) {
@@ -342,8 +337,6 @@ function setupGlobalEventListeners() {
             addToCart(productId, 1, price);
         }
     });
-
-    // Các event listeners khác
     document.addEventListener('click', handleCartEvents);
     document.addEventListener('change', handleQuantityChange);
 }

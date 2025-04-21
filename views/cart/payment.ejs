@@ -1,72 +1,99 @@
 <div class="container my-5">
     <div class="row">
         <div class="col-md-8">
-            <!-- Phần thông tin giao hàng -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Thông tin giao hàng</h4>
-                </div>
-                <div class="card-body">
-                    <form id="checkout-form">
+            <!-- Form thanh toán chứa cả thông tin giao hàng và phương thức thanh toán -->
+            <form id="checkout-form" class="needs-validation" novalidate>
+                <!-- Phần thông tin giao hàng -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Thông tin giao hàng</h4>
+                    </div>
+                    <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Họ và tên</label>
                                 <input type="text" class="form-control" id="name" name="name" required 
                                     value="<%= user ? user.name : '' %>">
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập họ và tên
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" required
                                     value="<%= user ? user.email : '' %>">
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập email hợp lệ
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label for="address" class="form-label">Địa chỉ</label>
-                                <input type="text" class="form-control" id="address" name="address" required>
+                                <input type="text" class="form-control" id="address" name="address" 
+                                    value="<%= user ? user.address : '' %>" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập địa chỉ
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="city" class="form-label">Thành phố</label>
-                                <input type="text" class="form-control" id="city" name="city" required>
+                                <input type="text" class="form-control" id="city" 
+                                    value="<%= user ? user.city : '' %>"
+                                    name="city" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập thành phố
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="postalCode" class="form-label">Mã bưu điện</label>
-                                <input type="text" class="form-control" id="postalCode" name="postalCode" required>
+                                <input type="text" class="form-control" id="postalCode" 
+                                    value="<%= user ? user.postalCode : '' %>" name="postalCode" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập mã bưu điện
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label for="country" class="form-label">Quốc gia</label>
-                                <input type="text" class="form-control" id="country" name="country" required>
+                                <input type="text" class="form-control" 
+                                    value="<%= user ? user.country : '' %>" id="country" name="country" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập quốc gia
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label for="phone" class="form-label">Số điện thoại</label>
                                 <input type="tel" class="form-control" id="phone" name="phone" required
                                     value="<%= user ? user.phone : '' %>">
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập số điện thoại
+                                </div>
                             </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Phần phương thức thanh toán -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Phương thức thanh toán</h4>
-                </div>
-                <div class="card-body">
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="radio" name="paymentMethod" 
-                            id="cod" value="COD" checked>
-                        <label class="form-check-label" for="cod">
-                            Thanh toán khi nhận hàng (COD)
-                        </label>
+                <!-- Phần phương thức thanh toán (nằm trong form) -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Phương thức thanh toán</h4>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="paymentMethod" 
-                            id="momo" value="MOMO">
-                        <label class="form-check-label" for="momo">
-                            Ví điện tử MoMo
-                        </label>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" 
+                                id="cod" value="COD" checked required>
+                            <label class="form-check-label" for="cod">
+                                Thanh toán khi nhận hàng (COD)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" 
+                                id="momo" value="MOMO" required>
+                            <label class="form-check-label" for="momo">
+                                Ví điện tử MoMo
+                            </label>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- Phần tổng kết đơn hàng -->

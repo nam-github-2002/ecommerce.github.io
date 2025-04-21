@@ -8,8 +8,11 @@ const { calcPrices } = require('../utils/calcPrice');
 // @access  Private
 exports.getCheckout = async (req, res, next) => {
     try {
-        const { userId } = req.body;
-        let cart = await Cart.findOne({ user: userId });
+        const user = req.user;
+        const cart = await Cart.findOne({ user: req.user._id }).populate({
+            path: 'cartItems.product',
+            select: 'name price images sizes colors', // Chọn các trường cần lấy
+        });
 
         if (!cart || cart.cartItems.length === 0) {
             req.flash('error', 'Giỏ hàng của bạn đang trống');
@@ -25,7 +28,7 @@ exports.getCheckout = async (req, res, next) => {
             subTotal,
             shippingFee,
             total,
-            user: req.user,
+            user,
         });
     } catch (error) {
         next(error);
@@ -38,51 +41,65 @@ exports.getCheckout = async (req, res, next) => {
 exports.createOrder = async (req, res, next) => {
     try {
         const {
-            paymentMethod,
             name,
+            email,
             address,
             city,
             postalCode,
             country,
             phone,
+            paymentMethod,
         } = req.body;
-        const cartItems = req.session.cart || [];
 
-        if (cartItems.length === 0) {
-            res.status(400);
-            throw new Error('Giỏ hàng trống');
+        // 1. Kiểm tra giỏ hàng
+        const cart = await Cart.findOne({ user: req.user._id })
+            .populate('cartItems.product', 'name price images')
+
+        if (!cart || cart.cartItems.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Giỏ hàng của bạn đang trống',
+            });
         }
 
-        // Lấy thông tin sản phẩm từ database để đảm bảo giá chính xác
-        const itemsFromDB = await Promise.all(
-            cartItems.map(async (item) => {
-                const product = await Product.findById(item.product.id);
-                return {
-                    name: product.name,
-                    quantity: item.quantity,
-                    image: product.images[0].url,
-                    price: product.price,
-                    product: product._id,
-                    color: item.color,
-                    size: item.size,
-                };
-            })
-        );
+        // 2. Kiểm tra order cuối cùng của user
+        const lastOrder = await Order.findOne({ user: req.user._id })
+            .sort({ createdAt: -1 })
+            .limit(1)
 
-        // Tính toán giá
-        const { subTotal, shippingFee, total } = calcPrices(itemsFromDB);
+        // Nếu có order trong vòng 30 giây trở lại đây
+        if (lastOrder && (new Date() - lastOrder.createdAt < 70000)) {
+            console.log( (new Date() - lastOrder.createdAt))
+            return res.status(400).json({
+                success: false,
+                message: 'Bạn vừa tạo đơn hàng gần đây. Vui lòng đợi một chút.',
+            });
+        }
 
-        // Tạo đơn hàng
+        // 3. Chuẩn bị order items
+        const orderItems = cart.cartItems.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            image: item.product.images[0]?.url || '/images/default-product.jpg',
+            price: item.product.price,
+            product: item.product._id,
+        }));
+
+        // 4. Tính toán giá
+        const { subTotal, shippingFee, total } = calcPrices(orderItems);
+
+        // 5. Tạo đơn hàng mới
         const order = new Order({
             user: req.user._id,
-            orderItems: itemsFromDB,
+            orderItems,
             shippingAddress: {
                 name,
+                email,
+                phone,
                 address,
                 city,
                 postalCode,
                 country,
-                phone,
             },
             paymentMethod,
             itemsPrice: subTotal,
@@ -90,18 +107,22 @@ exports.createOrder = async (req, res, next) => {
             totalPrice: total,
         });
 
+        // 6. Lưu order và xóa cart trong cùng transaction
         const createdOrder = await order.save();
-
-        // Xóa giỏ hàng sau khi đặt hàng thành công
-        req.session.cart = [];
+        await Cart.findOneAndDelete({ user: req.user._id });
 
         res.status(201).json({
             success: true,
             order: createdOrder,
-            redirectUrl: `/orders/${createdOrder._id}`,
+            redirectUrl: `/orders/${createdOrder._id}`, // Nên chuyển đến trang chi tiết đơn hàng
         });
     } catch (error) {
-        next(error);
+        console.error('Error creating order:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Đã xảy ra lỗi khi tạo đơn hàng',
+            error: error.message,
+        });
     }
 };
 
