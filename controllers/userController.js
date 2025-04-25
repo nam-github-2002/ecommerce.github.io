@@ -1,43 +1,84 @@
 const User = require('../models/User');
-const asyncHandler = require('express-async-handler');
+const { upload } = require('../utils/fileUpload');
 const ErrorResponse = require('../utils/errorResponse');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Get current user profile
-// @route   GET /api/v1/user/me
-// @access  Private
-exports.getUserProfile = asyncHandler(async (req, res, next) => {
+// @route   GET /user/me
+exports.getUserProfile = async (req, res, next) => {
     const user = await User.findById(req.user._id);
     res.status(200).render('users/profile', {
         success: true,
         title: 'Thông tin khách hàng',
         user: user,
     });
-});
+};
 
 // @desc    Update user details
-// @route   PUT /api/v1/user/updatedetails
-// @access  Private
-exports.updateUserDetails = asyncHandler(async (req, res, next) => {
-    const fieldsToUpdate = {
-        name: req.body.name,
-        email: req.body.email,
-    };
+// @route   POST /user/updatedetails
+exports.updateUserDetails = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user._id);
 
-    const user = await User.findByIdAndUpdate(req.user._id, fieldsToUpdate, {
-        new: true,
-        runValidators: true,
-    }).select('-password');
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found',
+            });
+        }
 
-    res.status(200).json({
-        success: true,
-        data: user,
-    });
-});
+        // Xử lý upload avatar
+        if (req.file) {
+            // Xóa avatar cũ nếu tồn tại và không phải avatar mặc định
+            if (
+                user.avatar.url &&
+                !user.avatar.url.includes('default_avatar')
+            ) {
+                const oldAvatarPath = path.join(
+                    __dirname,
+                    `../public${user.avatar.url}`
+                );
+                if (fs.existsSync(oldAvatarPath)) {
+                    fs.unlinkSync(oldAvatarPath);
+                }
+            }
+
+            user.avatar = {
+                public_id: req.file.filename.split('.')[0],
+                url: `/images/${req.file.filename}`,
+            };
+        }
+
+        // Cập nhật thông tin
+        user.name = req.body.name || user.name;
+
+        user.address = {
+            addr: req.body.address || '',
+            city: req.body.city || '',
+            country: req.body.country || '',
+            phone: req.body.phone || '',
+            postalCode: req.body.postalCode || '',
+        };
+
+        await user.save();
+        
+        req.flash('success', 'Profile updated successfully'); // Requires connect-flash
+        res.redirect('/user/me');
+
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Server error',
+        });
+    }
+};
 
 // @desc    Update password
 // @route   PUT /api/v1/user/updatepassword
 // @access  Private
-exports.updatePassword = asyncHandler(async (req, res, next) => {
+exports.updatePassword = async (req, res, next) => {
     const user = await User.findById(req.user._id).select('+password');
 
     // Check current password
@@ -49,12 +90,12 @@ exports.updatePassword = asyncHandler(async (req, res, next) => {
     await user.save();
 
     sendTokenResponse(user, 200, res);
-});
+};
 
 // @desc    Upload user avatar
 // @route   PUT /api/v1/user/avatar
 // @access  Private
-exports.uploadAvatar = asyncHandler(async (req, res, next) => {
+exports.uploadAvatar = async (req, res, next) => {
     if (!req.files) {
         return next(new ErrorResponse('Vui lòng tải lên một hình ảnh', 400));
     }
@@ -94,4 +135,7 @@ exports.uploadAvatar = asyncHandler(async (req, res, next) => {
             data: file.name,
         });
     });
-});
+};
+
+// Middleware upload avatar
+exports.uploadAvatar = upload.single('avatar');

@@ -72,18 +72,27 @@ const OrderSchema = new mongoose.Schema({
         required: true,
         default: false,
     },
-    paidAt: {
-        type: Date,
+    isCancelled: {
+        type: Boolean,
+        required: true,
+        default: false,
     },
     isDelivered: {
         type: Boolean,
         required: true,
         default: false,
     },
+    paidAt: {
+        type: Date,
+    },
     deliveredAt: {
         type: Date,
     },
     createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    cancelledAt: {
         type: Date,
         default: Date.now,
     },

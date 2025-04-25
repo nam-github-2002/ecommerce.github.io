@@ -4,21 +4,17 @@
             <div class="card">
                 <div class="card-body text-center">
                     <img
-                        src="<%= user.avatar %>"
+                        src="<%= user.avatar.url || '/images/default_avatar.png' %>"
                         alt="Avatar"
                         class="rounded-circle mb-3"
-                        width="150" />
+                        width="150"
+                        height="150" />
                     <h4><%= user.name %></h4>
                     <p class="text-muted"><%= user.email %></p>
                     <hr />
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link active" href="/user/profile"
-                                >Thông tin cá nhân</a
-                            >
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/orders"
+                            <a class="nav-link" href="/order/getOrder"
                                 >Đơn hàng của tôi</a
                             >
                         </li>
@@ -67,6 +63,67 @@
                                     disabled />
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="address" class="form-label"
+                                    >Địa chỉ</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="address"
+                                    name="address"
+                                    value="<%= user.address.addr || '' %>" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="city" class="form-label"
+                                    >Thành phố</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="city"
+                                    name="city"
+                                    value="<%= user.address.city || '' %>" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="country" class="form-label"
+                                    >Quốc gia</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="country"
+                                    name="country"
+                                    value="<%= user.address.country || '' %>" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label"
+                                    >Số điện thoại</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="phone"
+                                    name="phone"
+                                    value="<%= user.address.phone || '' %>" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="postalCode" class="form-label"
+                                    >Mã bưu điện</label
+                                >
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="postalCode"
+                                    name="postalCode"
+                                    value="<%= user.address.postalCode || '' %>" />
+                            </div>
+                        </div>
                         <div class="mb-3">
                             <label for="avatar" class="form-label"
                                 >Ảnh đại diện</label
@@ -76,6 +133,11 @@
                                 class="form-control"
                                 id="avatar"
                                 name="avatar" />
+                            <% if (user.avatar.url) { %>
+                            <small class="text-muted"
+                                >Ảnh hiện tại: <%= user.avatar.url %></small
+                            >
+                            <% } %>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             Cập nhật
@@ -90,27 +152,32 @@
 <script>
     document
         .getElementById('profile-form')
-        .addEventListener('submit', function (e) {
+        .addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const formData = new FormData(this);
 
-            fetch('/user/updatedetails', {
+            for (let [key, value] of formData.entries()) {
+                console.table(key, ': ', value);
+            }
+
+            const response = await fetch('/user/updatedetails', {
                 method: 'POST',
                 body: formData,
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        alert('Cập nhật thông tin thành công');
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Có lỗi xảy ra');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    alert('Có lỗi xảy ra khi cập nhật');
-                });
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
+
+            try {
+                const data = await response.json();
+                if (data.redirectUrl) {
+                    window.location.href = '/user/me';
+                }
+            } catch (jsonError) {
+                window.location.href = '/user/me';
+            }
         });
 </script>

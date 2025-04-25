@@ -217,14 +217,7 @@
         }
     });
 
-    // Xử lý thêm vào giỏ hàng
-    document
-        .querySelector('.add-to-cart')
-        .addEventListener('click', function () {
-            const productId = this.getAttribute('data-product-id');
-            const quantity = document.querySelector('.quantity input').value;
-            addToCart(productId, quantity);
-        });
+
 
     // Xử lý đánh giá sao
     document.querySelectorAll('.rating-stars i').forEach((star) => {

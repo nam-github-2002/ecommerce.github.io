@@ -47,11 +47,11 @@
         <h2 class="mb-0">Sản phẩm</h2>
         <div class="sort-by">
           <select class="form-select" id="sort-by">
-            <option value="createdAt">Mới nhất</option>
-            <option value="price">Giá: Thấp đến cao</option>
-            <option value="-price">Giá: Cao đến thấp</option>
-            <option value="-ratings">Đánh giá cao nhất</option>
-          </select>
+            <option value="createdAt" <%= currentSort === 'createdAt' ? 'selected' : '' %>>Mới nhất</option>
+            <option value="price" <%= currentSort === 'price' ? 'selected' : '' %>>Giá: Thấp đến cao</option>
+            <option value="-price" <%= currentSort === '-price' ? 'selected' : '' %>>Giá: Cao đến thấp</option>
+            <option value="-ratings" <%= currentSort === '-ratings' ? 'selected' : '' %>>Đánh giá cao nhất</option>
+        </select>
         </div>
       </div>
   
@@ -119,6 +119,7 @@
   </div>
   
   <script>
+
     // Xử lý sắp xếp sản phẩm
     document.getElementById('sort-by').addEventListener('change', function() {
       const url = new URL(window.location.href);
@@ -133,4 +134,5 @@
       const params = new URLSearchParams(formData).toString();
       window.location.href = `?${params}`;
     });
+
   </script>

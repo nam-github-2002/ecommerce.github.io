@@ -1,11 +1,11 @@
 const Order = require('../models/Order');
+const User = require('../models/User');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const { calcPrices } = require('../utils/calcPrice');
 
 // @desc    Get checkout page
-// @route   GET /checkout
-// @access  Private
+// @route   GET /order/checkout
 exports.getCheckout = async (req, res, next) => {
     try {
         const user = req.user;
@@ -36,8 +36,7 @@ exports.getCheckout = async (req, res, next) => {
 };
 
 // @desc    Create new order
-// @route   POST /orders
-// @access  Private
+// @route   POST /order/create
 exports.createOrder = async (req, res, next) => {
     try {
         const {
@@ -51,9 +50,24 @@ exports.createOrder = async (req, res, next) => {
             paymentMethod,
         } = req.body;
 
+        if (req.user) {
+            const user = await User.findById(req.user._id);
+
+            user.address = {
+                phone: phone || user.address.phone,
+                postalCode: postalCode || user.address.postalCode,
+                addr: address || user.address.addr,
+                city: city || user.address.city,
+                country: country || user.address.country,
+            };
+            await user.save();
+        }
+
         // 1. Kiểm tra giỏ hàng
-        const cart = await Cart.findOne({ user: req.user._id })
-            .populate('cartItems.product', 'name price images')
+        const cart = await Cart.findOne({ user: req.user._id }).populate(
+            'cartItems.product',
+            'name price images'
+        );
 
         if (!cart || cart.cartItems.length === 0) {
             return res.status(400).json({
@@ -65,11 +79,11 @@ exports.createOrder = async (req, res, next) => {
         // 2. Kiểm tra order cuối cùng của user
         const lastOrder = await Order.findOne({ user: req.user._id })
             .sort({ createdAt: -1 })
-            .limit(1)
+            .limit(1);
 
         // Nếu có order trong vòng 30 giây trở lại đây
-        if (lastOrder && (new Date() - lastOrder.createdAt < 70000)) {
-            console.log( (new Date() - lastOrder.createdAt))
+        if (lastOrder && new Date() - lastOrder.createdAt < 70000) {
+            console.log(new Date() - lastOrder.createdAt);
             return res.status(400).json({
                 success: false,
                 message: 'Bạn vừa tạo đơn hàng gần đây. Vui lòng đợi một chút.',
@@ -111,11 +125,12 @@ exports.createOrder = async (req, res, next) => {
         const createdOrder = await order.save();
         await Cart.findOneAndDelete({ user: req.user._id });
 
-        res.status(201).json({
-            success: true,
-            order: createdOrder,
-            redirectUrl: `/orders/${createdOrder._id}`, // Nên chuyển đến trang chi tiết đơn hàng
-        });
+        if (req.user)
+            res.status(201).json({
+                success: true,
+                order: createdOrder,
+                redirectUrl: `/order/getOrder/${createdOrder._id}`,
+            });
     } catch (error) {
         console.error('Error creating order:', error);
         res.status(500).json({
@@ -127,16 +142,15 @@ exports.createOrder = async (req, res, next) => {
 };
 
 // @desc    Get user orders
-// @route   GET /orders
-// @access  Private
+// @route   GET /order/getOrder
 exports.getUserOrders = async (req, res, next) => {
     try {
         const orders = await Order.find({ user: req.user._id }).sort(
             '-createdAt'
         );
 
-        res.render('orders/list', {
-            title: 'Lịch sử đơn hàng',
+        res.render('users/order', {
+            title: 'Lịch sử đặt hàng',
             orders,
         });
     } catch (error) {
@@ -145,8 +159,7 @@ exports.getUserOrders = async (req, res, next) => {
 };
 
 // @desc    Get order details
-// @route   GET /orders/:id
-// @access  Private
+// @route   GET /order/getOrder/:id
 exports.getOrderDetails = async (req, res, next) => {
     try {
         const order = await Order.findById(req.params.id).populate(
@@ -168,7 +181,7 @@ exports.getOrderDetails = async (req, res, next) => {
             throw new Error('Không có quyền truy cập');
         }
 
-        res.render('orders/details', {
+        res.render('users/orderdetail', {
             title: 'Chi tiết đơn hàng',
             order,
         });
@@ -178,21 +191,14 @@ exports.getOrderDetails = async (req, res, next) => {
 };
 
 // @desc    Cancel order
-// @route   PUT /orders/:id/cancel
-// @access  Private
+// @route   POST /order/:id/cancel
 exports.cancelOrder = async (req, res, next) => {
     try {
-        const order = await Order.findById(req.params.id);
+        const order = await Order.findOne({ _id: req.params.id });
 
         if (!order) {
             res.status(404);
             throw new Error('Đơn hàng không tồn tại');
-        }
-
-        // Kiểm tra quyền
-        if (order.user.toString() !== req.user._id.toString()) {
-            res.status(401);
-            throw new Error('Không có quyền hủy đơn hàng này');
         }
 
         // Chỉ có thể hủy đơn hàng chưa thanh toán hoặc chưa vận chuyển
@@ -208,10 +214,7 @@ exports.cancelOrder = async (req, res, next) => {
 
         await order.save();
 
-        res.json({
-            success: true,
-            message: 'Đơn hàng đã được hủy thành công',
-        });
+        res.redirect('/order/getOrder');
     } catch (error) {
         next(error);
     }

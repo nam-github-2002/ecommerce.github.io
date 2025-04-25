@@ -1,8 +1,13 @@
+async function initializeCheckout() {
+    await mergeCartWithServer();
+    await loadContent('/order/checkout');
+    initCheckoutForm();
+}
 /**
  * Khởi tạo và xử lý sự kiện cho form thanh toán
  */
 function initCheckoutForm() {
-    console.trace('initCheckoutForm được gọi từ đâu');
+    console.trace('initCheckoutForm được gọi từ');
     console.log(
         'Số lượng form checkout trên trang:',
         document.querySelectorAll('#checkout-form').length
@@ -33,7 +38,7 @@ function initCheckoutForm() {
 
         try {
             showLoading(submitBtn);
-
+            console.log(submitBtn)
             const formData = getFormData(checkoutForm);
             const orderResult = await createOrder(formData);
 
@@ -127,7 +132,7 @@ async function createOrder(orderData) {
 function handleOrderResult(result, submitBtn) {
     if (result.success) {
         localStorage.removeItem('cart');
-        // window.location.href = '/product'
+        window.location.href = result.redirectUrl || '/product'
     } else {
         alert(result.message || 'Đã xảy ra lỗi khi đặt hàng');
         resetButton(submitBtn, 'Đặt hàng');

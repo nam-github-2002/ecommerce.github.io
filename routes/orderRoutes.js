@@ -23,6 +23,6 @@ router.get('/getOrder', protect, getUserOrders);
 router.get('/getOrder/:id', protect, getOrderDetails);
 
 // Hủy đơn hàng
-router.put('/orders/:id/cancel', protect, cancelOrder);
+router.post('/:id/cancel', protect, cancelOrder);
 
 module.exports = router;

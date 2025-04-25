@@ -32,6 +32,7 @@
                                 src="<%= user.avatar.url %>"
                                 alt="Avatar"
                                 class="rounded-circle"
+                                height="30"
                                 width="30" />
                             <span class="ms-2"><%= user.name %></span>
                         </a>
@@ -42,7 +43,7 @@
                                 >
                             </li>
                             <li>
-                                <a class="dropdown-item" href="/orders"
+                                <a class="dropdown-item" href="/order/getOrder"
                                     ><i class="fas fa-shopping-bag me-2"></i>Đơn
                                     hàng</a
                                 >
@@ -63,7 +64,7 @@
     </div>
 
     <!-- Main Header -->
-    <div class="main-header py-3 bg-white shadow-sm">
+    <div class="main-header py-4 bg-white shadow-sm">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-3">
@@ -72,13 +73,17 @@
                     </a>
                 </div>
                 <div class="col-md-6">
-                    <form action="/product" method="GET" class="d-flex">
+                    <form id="search-form" class="d-flex">
                         <input
                             type="text"
                             name="keyword"
+                            id="search-input"
                             class="form-control"
                             placeholder="Tìm kiếm sản phẩm..." />
-                        <button type="submit" class="btn btn-primary ms-2">
+                        <button
+                            type="button"
+                            id="search-btn"
+                            class="btn btn-primary ms-2">
                             <i class="fas fa-search"></i>
                         </button>
                     </form>

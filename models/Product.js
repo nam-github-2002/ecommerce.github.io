@@ -96,7 +96,7 @@ const productSchema = new mongoose.Schema(
                 color: String,
                 size: String,
                 stock: Number,
-                sku: String, // Mã sản phẩm riêng cho biến thể
+                sku: String,
             },
         ],
         numOfReviews: {
@@ -141,7 +141,7 @@ const productSchema = new mongoose.Schema(
         },
     },
     {
-        timestamps: true, // Tự động thêm createdAt và updatedAt
+        timestamps: true,
     }
 );
 

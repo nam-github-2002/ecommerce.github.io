@@ -14,9 +14,12 @@ const { protect } = require('../middlewares/authMiddleware');
 // Private routes
 router.use(protect);
 
-router.route('/me').get(getUserProfile);
-router.route('/updatedetails').put(updateUserDetails);
+router.route('/me').get(protect, getUserProfile);
+
+router.route('/updatedetails').post(protect, uploadAvatar, updateUserDetails);
+
 router.route('/updatepassword').put(updatePassword);
+
 router.route('/avatar').put(uploadAvatar);
 
 module.exports = router;

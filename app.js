@@ -10,7 +10,6 @@ const passport = require('passport');
 const ejsLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 
-
 // Khởi tạo app
 const app = express();
 

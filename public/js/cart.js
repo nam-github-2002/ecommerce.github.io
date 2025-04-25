@@ -114,7 +114,6 @@ async function mergeCartWithServer() {
         });
 
         const data = await response.json();
-        console.log('Response after merge:', data);
 
         if (!response.ok) {
             throw new Error(
@@ -124,11 +123,9 @@ async function mergeCartWithServer() {
 
         if (data.success) {
             updateCartUI(data.count);
-            showAlert('success', 'Đã đồng bộ giỏ hàng với tài khoản');
         }
     } catch (error) {
         console.error('Merge cart failed:', error);
-        showAlert('danger', error.message || 'Đồng bộ giỏ hàng thất bại');
     }
 }
 

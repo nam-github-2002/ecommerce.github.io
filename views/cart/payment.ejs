@@ -29,7 +29,7 @@
                             <div class="col-12">
                                 <label for="address" class="form-label">Địa chỉ</label>
                                 <input type="text" class="form-control" id="address" name="address" 
-                                    value="<%= user ? user.address : '' %>" required>
+                                    value="<%= user.address ? user.address.addr : '' %>" required>
                                 <div class="invalid-feedback">
                                     Vui lòng nhập địa chỉ
                                 </div>
@@ -37,7 +37,7 @@
                             <div class="col-md-4">
                                 <label for="city" class="form-label">Thành phố</label>
                                 <input type="text" class="form-control" id="city" 
-                                    value="<%= user ? user.city : '' %>"
+                                    value="<%= user.address ? user.address.city : '' %>"
                                     name="city" required>
                                 <div class="invalid-feedback">
                                     Vui lòng nhập thành phố
@@ -46,7 +46,7 @@
                             <div class="col-md-4">
                                 <label for="postalCode" class="form-label">Mã bưu điện</label>
                                 <input type="text" class="form-control" id="postalCode" 
-                                    value="<%= user ? user.postalCode : '' %>" name="postalCode" required>
+                                    value="<%= user.address ? user.address.postalCode : '' %>" name="postalCode" required>
                                 <div class="invalid-feedback">
                                     Vui lòng nhập mã bưu điện
                                 </div>
@@ -54,7 +54,7 @@
                             <div class="col-md-4">
                                 <label for="country" class="form-label">Quốc gia</label>
                                 <input type="text" class="form-control" 
-                                    value="<%= user ? user.country : '' %>" id="country" name="country" required>
+                                    value="<%= user.address ? user.address.country : '' %>" id="country" name="country" required>
                                 <div class="invalid-feedback">
                                     Vui lòng nhập quốc gia
                                 </div>
@@ -62,7 +62,7 @@
                             <div class="col-12">
                                 <label for="phone" class="form-label">Số điện thoại</label>
                                 <input type="tel" class="form-control" id="phone" name="phone" required
-                                    value="<%= user ? user.phone : '' %>">
+                                    value="<%= user.address ? user.address.phone : '' %>">
                                 <div class="invalid-feedback">
                                     Vui lòng nhập số điện thoại
                                 </div>

@@ -66,7 +66,6 @@ exports.registerUser = async (req, res, next) => {
             ),
             httpOnly: true,
         });
-
         res.status(201).json({
             success: true,
             token,
@@ -122,7 +121,7 @@ exports.loginUser = async (req, res, next) => {
 
         if (remember) {
             cookieOptions.expires = new Date(
-                Date.now() + process.env.COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+                Date.now() + process.env.COOKIE_EXPIRE * 60 * 60 * 1000
             );
         }
 

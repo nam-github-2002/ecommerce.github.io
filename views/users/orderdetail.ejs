@@ -1,0 +1,172 @@
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12 mx-auto">
+            <!-- Header -->
+            <div class="order-header mb-4">
+                <div
+                    class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h4 mb-0">Chi tiết đơn hàng</h1>
+                    <span
+                        class="badge status-badge <%= order.isCancelled ? 'cancelled' : order.isPaid && order.isDelivered ? 'shipped' : order.isPaid ? 'paid' : 'pending' %>">
+                        <%= order.isCancelled ? 'Đã hủy' : order.isPaid &&
+                        order.isDelivered ? 'Đã giao hàng' : order.isPaid ? 'Đã thanh toán' : 'Chờ xử lý' %>
+                    </span>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <strong>Mã đơn hàng:</strong> #<%= order._id %>
+                        </p>
+                        <p class="mb-1">
+                            <strong>Ngày đặt:</strong> <%=
+                            order.createdAt.toLocaleDateString('vi-VN') %>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <% if (order.paidAt) { %>
+                        <p class="mb-1">
+                            <strong>Ngày thanh toán:</strong> <%=
+                            order.paidAt.toLocaleDateString('vi-VN') %>
+                        </p>
+                        <% } %> <% if (order.deliveredAt) { %>
+                        <p class="mb-1">
+                            <strong>Ngày giao hàng:</strong> <%=
+                            order.deliveredAt.toLocaleDateString('vi-VN') %>
+                        </p>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h2 class="h5 mb-0">Sản phẩm</h2>
+                </div>
+                <div class="card-body">
+                    <% order.orderItems.forEach(item => { %>
+                    <div
+                        class="order-item row align-items-center py-3 border-bottom">
+                        <div class="col-2">
+                            <img
+                                src="<%= item.image || '/images/default-product.jpg' %>"
+                                alt="<%= item.name %>"
+                                class="img-fluid" />
+                        </div>
+                        <div class="col-5">
+                            <h3 class="h6 mb-1"><%= item.name %></h3>
+                            <p class="text-muted small mb-0">
+                                SKU: <%= item.product %>
+                            </p>
+                        </div>
+                        <div class="col-3 text-center">
+                            <p class="mb-0">x<%= item.quantity %></p>
+                        </div>
+                        <div class="col-2 text-end">
+                            <p class="mb-0 text-primary">
+                                <%= item.price.toLocaleString('vi-VN') %>₫
+                            </p>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h2 class="h5 mb-0">Địa chỉ giao hàng</h2>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-1">
+                                <strong
+                                    ><%= order.shippingAddress.name %></strong
+                                >
+                            </p>
+                            <p class="mb-1">
+                                <%= order.shippingAddress.address %>
+                            </p>
+                            <p class="mb-1">
+                                <%= order.shippingAddress.city %>, <%=
+                                order.shippingAddress.country %>
+                            </p>
+                            <p class="mb-0">
+                                Điện thoại: <%= order.shippingAddress.phone ||
+                                'N/A' %>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h2 class="h5 mb-0">Tổng cộng</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Tạm tính:</span>
+                                <span
+                                    ><%=
+                                    order.itemsPrice.toLocaleString('vi-VN')
+                                    %>₫</span
+                                >
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Phí vận chuyển:</span>
+                                <span
+                                    ><%=
+                                    order.shippingPrice.toLocaleString('vi-VN')
+                                    %>₫</span
+                                >
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Thuế (VAT):</span>
+                                <span
+                                    ><%= order.taxPrice.toLocaleString('vi-VN')
+                                    %>₫</span
+                                >
+                            </div>
+                            <hr />
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>Tổng cộng:</span>
+                                <span class="text-primary"
+                                    ><%=
+                                    order.totalPrice.toLocaleString('vi-VN')
+                                    %>₫</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex justify-content-between mt-4">
+                <a href="/order/getOrder" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                </a>
+
+                <% if (!order.isPaid && !order.isCancelled) { %>
+                <div class="d-flex gap-2">
+                    <form
+                        action="/order/<%= order._id %>/cancel"
+                        method="POST"
+                        class="d-inline">
+                        <button type="submit" class="btn btn-danger cancel-order-btn">
+                            Hủy đơn hàng
+                        </button>
+                    </form>
+                    <% if (order.paymentMethod === 'paypal') { %>
+                    <a href="/payment/<%= order._id %>" class="btn btn-primary"
+                        >Thanh toán ngay</a
+                    >
+                    <% } %>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>

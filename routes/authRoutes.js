@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const { protect } = require('../middlewares/authMiddleware');
 const {
     showRegisterForm,
@@ -10,12 +11,14 @@ const {
     getUserProfile,
 } = require('../controllers/authController');
 
+const upload = multer();
+
 router.get('/register', showRegisterForm);
 router.get('/login', showLoginForm);
 router.get('/check-status', protect, (req, res) => {
     res.json({
         isAuthenticated: true,
-        user: req.user
+        user: req.user,
     });
 });
 router.post('/register', registerUser);
